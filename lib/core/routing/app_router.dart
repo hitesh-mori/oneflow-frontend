@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/signup_screen.dart';
-import '../../screens/type1/type1_home_screen.dart';
-import '../../screens/type2/type2_home_screen.dart';
-import '../../screens/type3/type3_home_screen.dart';
+import '../../screens/waiting/waiting_screen.dart';
+import '../../screens/dashboards/project_manager/project_manager_dashboard.dart';
+import '../../screens/dashboards/team_member/team_member_dashboard.dart';
+import '../../screens/dashboards/sales_dep/sales_dep_dashboard.dart';
+import '../../screens/dashboards/admin/admin_dashboard.dart';
 import '../../screens/profile/profile_screen.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/page_title_wrapper.dart';
@@ -36,7 +38,7 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Login - Flutter App',
+            title: 'Login - OneFlow',
             child: LoginScreen(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
@@ -47,41 +49,63 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Sign Up - Flutter App',
+            title: 'Sign Up - OneFlow',
             child: SignupScreen(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
       ),
       GoRoute(
-        path: Routes.type1Home,
+        path: Routes.waiting,
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Type 1 Home - Flutter App',
-            child: Type1HomeScreen(),
+            title: 'Waiting for Role - OneFlow',
+            child: WaitingScreen(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
       ),
       GoRoute(
-        path: Routes.type2Home,
+        path: Routes.projectManagerDashboard,
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Type 2 Home - Flutter App',
-            child: Type2HomeScreen(),
+            title: 'Project Manager Dashboard - OneFlow',
+            child: ProjectManagerDashboard(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
       ),
       GoRoute(
-        path: Routes.type3Home,
+        path: Routes.teamMemberDashboard,
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Type 3 Home - Flutter App',
-            child: Type3HomeScreen(),
+            title: 'Team Member Dashboard - OneFlow',
+            child: TeamMemberDashboard(),
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
+      ),
+      GoRoute(
+        path: Routes.salesDepDashboard,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PageTitleWrapper(
+            title: 'Sales Department Dashboard - OneFlow',
+            child: SalesDepDashboard(),
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
+        ),
+      ),
+      GoRoute(
+        path: Routes.adminDashboard,
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: const PageTitleWrapper(
+            title: 'Admin Dashboard - OneFlow',
+            child: AdminDashboard(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,
         ),
@@ -91,7 +115,7 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
           child: const PageTitleWrapper(
-            title: 'Profile - Flutter App',
+            title: 'Profile - OneFlow',
             child: ProfileScreen(),
           ),
           transitionsBuilder: (context, animation, secondaryAnimation, child) => child,

@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'storage_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.206.32.108:5000';
+  static const String baseUrl = 'http://10.206.32.108:4000';
 
   static Future<Map<String, String>> _getHeaders({bool needsAuth = false}) async {
     final headers = {
@@ -53,15 +53,15 @@ class ApiService {
       );
 
       if (kDebugMode) {
-        debugPrint('📨 API Response:');
-        debugPrint('   Status: ${response.statusCode}');
-        debugPrint('   Body: ${response.body}');
+        debugPrint('API Response:');
+        debugPrint('Status: ${response.statusCode}');
+        debugPrint('Body: ${response.body}');
       }
 
       return response;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ API Error: $e');
+        debugPrint('API Error: $e');
       }
       rethrow;
     }
