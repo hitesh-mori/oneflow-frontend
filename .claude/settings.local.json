@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(nul)",
+      "Bash(flutter pub get:*)",
+      "Bash(tree:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(dart analyze:*)",
+      "Bash(flutter pub deps:*)",
+      "WebSearch",
+      "WebFetch(domain:vercel.com)",
+      "Bash(curl:*)",
+      "Bash(tar:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(flutter doctor:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
