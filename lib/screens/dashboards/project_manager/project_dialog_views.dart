@@ -406,8 +406,8 @@ class _EditProjectViewState extends State<EditProjectView> {
                         setLocalState(() {
                           filteredUsers = _allUsers
                               .where((user) =>
-                                  user.name.toLowerCase().contains(value.toLowerCase()) ||
-                                  user.email.toLowerCase().contains(value.toLowerCase()))
+                          user.name.toLowerCase().contains(value.toLowerCase()) ||
+                              user.email.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -645,7 +645,7 @@ class _TasksViewState extends State<TasksView> {
       } else {
         _filteredTasks = _tasks.where((task) {
           return task.title.toLowerCase().contains(query) ||
-                 (task.description?.toLowerCase().contains(query) ?? false);
+              (task.description?.toLowerCase().contains(query) ?? false);
         }).toList();
       }
     });
@@ -728,16 +728,39 @@ class _TasksViewState extends State<TasksView> {
                       prefixIcon: Icon(Icons.search, color: AppColors.theme['primaryColor'], size: 20),
                       suffixIcon: _hasSearchText
                           ? MouseRegion(
-                              cursor: SystemMouseCursors.click,
-                              child: GestureDetector(
-                                onTap: () => _searchController.clear(),
-                                child: Icon(Icons.clear, color: AppColors.theme['secondaryColor'], size: 20),
-                              ),
-                            )
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () => _searchController.clear(),
+                          child: Icon(Icons.clear, color: AppColors.theme['secondaryColor'], size: 20),
+                        ),
+                      )
                           : null,
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: _fetchTasks,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.theme['primaryColor'] as Color, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.shade200,
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(Icons.refresh_rounded, color: AppColors.theme['primaryColor'], size: 20),
                   ),
                 ),
               ),
@@ -869,33 +892,33 @@ class _TasksViewState extends State<TasksView> {
 
     return _filteredTasks.isEmpty
         ? Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.search_off, size: 64, color: AppColors.theme['secondaryColor'].withValues(alpha: 0.3)),
-                const SizedBox(height: 16),
-                Text(
-                  _searchController.text.isEmpty ? 'No tasks found' : 'No tasks match your search',
-                  style: TextStyle(fontSize: 16, color: AppColors.theme['secondaryColor']),
-                ),
-              ],
-            ),
-          )
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.search_off, size: 64, color: AppColors.theme['secondaryColor'].withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
+          Text(
+            _searchController.text.isEmpty ? 'No tasks found' : 'No tasks match your search',
+            style: TextStyle(fontSize: 16, color: AppColors.theme['secondaryColor']),
+          ),
+        ],
+      ),
+    )
         : Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildKanbanColumn('New', 'new', newTasks, const Color(0xFF6B7280))),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKanbanColumn('In Progress', 'in_progress', inProgressTasks, const Color(0xFF3B82F6))),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKanbanColumn('Blocked', 'blocked', blockedTasks, const Color(0xFFEF4444))),
-                const SizedBox(width: 16),
-                Expanded(child: _buildKanbanColumn('Done', 'done', doneTasks, const Color(0xFF10B981))),
-              ],
-            ),
-          );
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildKanbanColumn('New', 'new', newTasks, const Color(0xFF6B7280))),
+          const SizedBox(width: 16),
+          Expanded(child: _buildKanbanColumn('In Progress', 'in_progress', inProgressTasks, const Color(0xFF3B82F6))),
+          const SizedBox(width: 16),
+          Expanded(child: _buildKanbanColumn('Blocked', 'blocked', blockedTasks, const Color(0xFFEF4444))),
+          const SizedBox(width: 16),
+          Expanded(child: _buildKanbanColumn('Done', 'done', doneTasks, const Color(0xFF10B981))),
+        ],
+      ),
+    );
   }
 
   Widget _buildKanbanColumn(String title, String state, List<TaskModel> tasks, Color color) {
@@ -978,29 +1001,29 @@ class _TasksViewState extends State<TasksView> {
                   ),
                   child: tasks.isEmpty
                       ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.inbox_outlined, size: 48, color: color.withValues(alpha: 0.3)),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'No tasks',
-                                  style: TextStyle(
-                                    color: AppColors.theme['secondaryColor'],
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.inbox_outlined, size: 48, color: color.withValues(alpha: 0.3)),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No tasks',
+                            style: TextStyle(
+                              color: AppColors.theme['secondaryColor'],
+                              fontSize: 14,
                             ),
                           ),
-                        )
+                        ],
+                      ),
+                    ),
+                  )
                       : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: tasks.length,
-                          itemBuilder: (context, index) => _buildDraggableTaskCard(tasks[index], color),
-                        ),
+                    padding: const EdgeInsets.all(12),
+                    itemCount: tasks.length,
+                    itemBuilder: (context, index) => _buildDraggableTaskCard(tasks[index], color),
+                  ),
                 );
               },
             ),
@@ -1151,23 +1174,35 @@ class _TasksViewState extends State<TasksView> {
                     for (var i = 0; i < (task.assignees.length > 2 ? 2 : task.assignees.length); i++)
                       Padding(
                         padding: EdgeInsets.only(left: i * 16.0),
-                        child: Container(
-                          width: 24,
-                          height: 24,
+                        child: Tooltip(
+                          message: '${task.assignees[i].name}\n${task.assignees[i].email}',
+                          textStyle: const TextStyle(color: Colors.white, fontSize: 12),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [stateColor, stateColor.withValues(alpha: 0.7)],
-                            ),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Center(
-                            child: Text(
-                              task.assignees[i].name[0].toUpperCase(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
+                          waitDuration: const Duration(milliseconds: 300),
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [stateColor, stateColor.withValues(alpha: 0.7)],
+                                ),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  task.assignees[i].name[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -1176,21 +1211,33 @@ class _TasksViewState extends State<TasksView> {
                     if (task.assignees.length > 2)
                       Padding(
                         padding: const EdgeInsets.only(left: 32),
-                        child: Container(
-                          width: 24,
-                          height: 24,
+                        child: Tooltip(
+                          message: '${task.assignees.length - 2} more team members',
+                          textStyle: const TextStyle(color: Colors.white, fontSize: 12),
                           decoration: BoxDecoration(
-                            color: AppColors.theme['secondaryColor'],
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Center(
-                            child: Text(
-                              '+${task.assignees.length - 2}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 8,
-                                fontWeight: FontWeight.bold,
+                          waitDuration: const Duration(milliseconds: 300),
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: AppColors.theme['secondaryColor'],
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${task.assignees.length - 2}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -1308,11 +1355,11 @@ class _AddTaskInlineFormState extends State<AddTaskInlineForm> {
         setState(() {
           _allUsers = widget.project!.members
               .map((m) => UserModel(
-                    id: m.id,
-                    name: m.name,
-                    email: m.email,
-                    userType: 'team_member',
-                  ))
+            id: m.id,
+            name: m.name,
+            email: m.email,
+            userType: 'team_member',
+          ))
               .toList();
           _isLoadingUsers = false;
         });
@@ -1401,8 +1448,8 @@ class _AddTaskInlineFormState extends State<AddTaskInlineForm> {
                         setLocalState(() {
                           filteredUsers = _allUsers
                               .where((user) =>
-                                  user.name.toLowerCase().contains(value.toLowerCase()) ||
-                                  user.email.toLowerCase().contains(value.toLowerCase()))
+                          user.name.toLowerCase().contains(value.toLowerCase()) ||
+                              user.email.toLowerCase().contains(value.toLowerCase()))
                               .toList();
                         });
                       },
@@ -1413,107 +1460,107 @@ class _AddTaskInlineFormState extends State<AddTaskInlineForm> {
                     constraints: const BoxConstraints(maxHeight: 200),
                     child: filteredUsers.isEmpty
                         ? const Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Center(child: Text('No team members found')),
-                          )
+                      padding: EdgeInsets.all(20),
+                      child: Center(child: Text('No team members found')),
+                    )
                         : ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: filteredUsers.length,
-                            itemBuilder: (context, index) {
-                              final user = filteredUsers[index];
-                              final isSelected = _selectedAssignees.contains(user.id);
-                              return MouseRegion(
-                                cursor: SystemMouseCursors.click,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      if (isSelected) {
-                                        _selectedAssignees.remove(user.id);
-                                      } else {
-                                        _selectedAssignees.add(user.id!);
-                                      }
-                                    });
-                                    setLocalState(() {});
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      shrinkWrap: true,
+                      itemCount: filteredUsers.length,
+                      itemBuilder: (context, index) {
+                        final user = filteredUsers[index];
+                        final isSelected = _selectedAssignees.contains(user.id);
+                        return MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (isSelected) {
+                                  _selectedAssignees.remove(user.id);
+                                } else {
+                                  _selectedAssignees.add(user.id!);
+                                }
+                              });
+                              setLocalState(() {});
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: isSelected ? (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05) : Colors.transparent,
+                                border: Border(
+                                  top: index == 0 ? BorderSide.none : BorderSide(color: Colors.grey.shade200),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 20,
+                                    height: 20,
                                     decoration: BoxDecoration(
-                                      color: isSelected ? (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05) : Colors.transparent,
-                                      border: Border(
-                                        top: index == 0 ? BorderSide.none : BorderSide(color: Colors.grey.shade200),
+                                      color: isSelected ? AppColors.theme['primaryColor'] : Colors.white,
+                                      border: Border.all(
+                                        color: isSelected ? AppColors.theme['primaryColor'] as Color : Colors.grey.shade400,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: isSelected
+                                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                                        : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          AppColors.theme['primaryColor'],
+                                          (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                                        ],
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        user.name[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
-                                    child: Row(
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Container(
-                                          width: 20,
-                                          height: 20,
-                                          decoration: BoxDecoration(
-                                            color: isSelected ? AppColors.theme['primaryColor'] : Colors.white,
-                                            border: Border.all(
-                                              color: isSelected ? AppColors.theme['primaryColor'] as Color : Colors.grey.shade400,
-                                              width: 2,
-                                            ),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: isSelected
-                                              ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                              : null,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Container(
-                                          width: 36,
-                                          height: 36,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                AppColors.theme['primaryColor'],
-                                                (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
-                                              ],
-                                            ),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              user.name[0].toUpperCase(),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
+                                        Text(
+                                          user.name,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.theme['textColor'],
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                user.name,
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: AppColors.theme['textColor'],
-                                                ),
-                                              ),
-                                              Text(
-                                                user.email,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: AppColors.theme['secondaryColor'],
-                                                ),
-                                              ),
-                                            ],
+                                        Text(
+                                          user.email,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.theme['secondaryColor'],
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                ],
+                              ),
+                            ),
                           ),
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -1753,20 +1800,20 @@ class _AddTaskInlineFormState extends State<AddTaskInlineForm> {
                             child: _isCreating
                                 ? buildCircularShimmer(size: 20)
                                 : const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.check, color: Colors.white, size: 20),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Create Task',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check, color: Colors.white, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Create Task',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
                                   ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1912,21 +1959,21 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
               _isLoadingUsers
                   ? Center(child: buildCircularShimmer(size: 30))
                   : Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: _allUsers.map((user) {
-                        final isSelected = _selectedAssignees.contains(user.id);
-                        return FilterChip(
-                          label: Text(user.name),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (user.id != null) {
-                              setState(() => selected ? _selectedAssignees.add(user.id!) : _selectedAssignees.remove(user.id!));
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
+                spacing: 8,
+                runSpacing: 8,
+                children: _allUsers.map((user) {
+                  final isSelected = _selectedAssignees.contains(user.id);
+                  return FilterChip(
+                    label: Text(user.name),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (user.id != null) {
+                        setState(() => selected ? _selectedAssignees.add(user.id!) : _selectedAssignees.remove(user.id!));
+                      }
+                    },
+                  );
+                }).toList(),
+              ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -2103,21 +2150,21 @@ class _TeamMembersViewState extends State<TeamMembersView> {
                   ),
                   child: _isUnassigning
                       ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(Colors.white),
+                    ),
+                  )
                       : const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.person_remove_rounded, color: Colors.white, size: 16),
-                            SizedBox(width: 6),
-                            Text('Unassign', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_remove_rounded, color: Colors.white, size: 16),
+                      SizedBox(width: 6),
+                      Text('Unassign', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
                 ),
               ),
             ),

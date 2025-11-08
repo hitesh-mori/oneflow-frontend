@@ -83,6 +83,8 @@ class TimeLogModel {
   final DateTime date;
   final bool billable;
   final String? note;
+  final double? hourlyRate;
+  final double? cost;
 
   TimeLogModel({
     this.id,
@@ -92,9 +94,19 @@ class TimeLogModel {
     required this.date,
     this.billable = true,
     this.note,
+    this.hourlyRate,
+    this.cost,
   });
 
   factory TimeLogModel.fromJson(Map<String, dynamic> json) {
+    // Extract hourly rate from user object if available
+    double? hourlyRate;
+    if (json['user'] is Map && json['user']?['hourlyRate'] != null) {
+      hourlyRate = (json['user']['hourlyRate'] as num).toDouble();
+    } else if (json['hourlyRate'] != null) {
+      hourlyRate = (json['hourlyRate'] as num).toDouble();
+    }
+
     return TimeLogModel(
       id: json['_id'],
       userId: json['user'] is String
@@ -107,6 +119,8 @@ class TimeLogModel {
       date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
       billable: json['billable'] ?? true,
       note: json['note'],
+      hourlyRate: hourlyRate,
+      cost: json['cost'] != null ? (json['cost'] as num).toDouble() : null,
     );
   }
 
@@ -118,7 +132,16 @@ class TimeLogModel {
       'date': date.toIso8601String(),
       'billable': billable,
       if (note != null) 'note': note,
+      if (hourlyRate != null) 'hourlyRate': hourlyRate,
+      if (cost != null) 'cost': cost,
     };
+  }
+
+  // Calculate cost if not provided by backend
+  double get calculatedCost {
+    if (cost != null) return cost!;
+    if (hourlyRate != null) return hours * hourlyRate!;
+    return 0.0;
   }
 }
 

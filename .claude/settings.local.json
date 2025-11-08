@@ -17,7 +17,8 @@
       "Bash(flutter doctor:*)",
       "Bash(del \"lib\\screens\\dashboards\\project_manager\\project_manager_dashboard.dart\")",
       "Bash(move:*)",
-      "Bash(flutter pub add:*)"
+      "Bash(flutter pub add:*)",
+      "Bash(flutter build:*)"
     ],
     "deny": [],
     "ask": []

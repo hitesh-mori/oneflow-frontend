@@ -392,102 +392,324 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Row(
+          // Modern Header with Title and Stats
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Row
+                Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2))),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _sortBy,
-                          icon: Icon(Icons.sort_rounded, color: AppColors.theme['primaryColor']),
-                          items: const [
-                            DropdownMenuItem(value: 'endDate', child: Text('Sort by Deadline')),
-                            DropdownMenuItem(value: 'startDate', child: Text('Sort by Start Date')),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
                           ],
-                          onChanged: (value) => setState(() { _sortBy = value!; _filterProjects(); }),
                         ),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.folder_rounded, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Projects',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.theme['textColor'],
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Manage and track all your projects',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.theme['secondaryColor'],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Controls Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          // Search Bar (First Priority)
+                          Expanded(
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: TextField(
+                                controller: _searchController,
+                                decoration: InputDecoration(
+                                  hintText: 'Search projects by name or description...',
+                                  hintStyle: const TextStyle(
+                                    color: Color(0xFF94A3B8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                  prefixIcon: Icon(
+                                    Icons.search_rounded,
+                                    color: AppColors.theme['primaryColor'],
+                                    size: 22,
+                                  ),
+                                  suffixIcon: _searchController.text.isNotEmpty
+                                      ? MouseRegion(
+                                          cursor: SystemMouseCursors.click,
+                                          child: GestureDetector(
+                                            onTap: () => _searchController.clear(),
+                                            child: const Icon(
+                                              Icons.clear_rounded,
+                                              color: Color(0xFF94A3B8),
+                                              size: 20,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Sort Dropdown
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _sortBy,
+                                icon: Icon(
+                                  Icons.unfold_more_rounded,
+                                  color: AppColors.theme['primaryColor'],
+                                  size: 20,
+                                ),
+                                style: TextStyle(
+                                  color: AppColors.theme['textColor'],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'endDate',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.event_rounded, size: 18, color: Color(0xFF64748B)),
+                                        SizedBox(width: 8),
+                                        Text('Deadline'),
+                                      ],
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'startDate',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.calendar_today_rounded, size: 18, color: Color(0xFF64748B)),
+                                        SizedBox(width: 8),
+                                        Text('Start Date'),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) => setState(() {
+                                  _sortBy = value!;
+                                  _filterProjects();
+                                }),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Sort Direction Toggle
+                          MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              onTap: () => setState(() {
+                                _sortAscending = !_sortAscending;
+                                _filterProjects();
+                              }),
+                              child: Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: Icon(
+                                  _sortAscending
+                                      ? Icons.arrow_upward_rounded
+                                      : Icons.arrow_downward_rounded,
+                                  color: AppColors.theme['primaryColor'],
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Status Filter
+                          Container(
+                            width: 160,
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _statusFilter,
+                                isExpanded: true,
+                                icon: Icon(
+                                  Icons.filter_list_rounded,
+                                  color: AppColors.theme['primaryColor'],
+                                  size: 20,
+                                ),
+                                style: TextStyle(
+                                  color: AppColors.theme['textColor'],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                items: [
+                                  const DropdownMenuItem(
+                                    value: 'all',
+                                    child: Text('All Status'),
+                                  ),
+                                  ...ProjectStatus.allStatuses.map(
+                                    (status) => DropdownMenuItem(
+                                      value: status,
+                                      child: Text(ProjectStatus.getLabel(status)),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (value) => setState(() {
+                                  _statusFilter = value!;
+                                  _filterProjects();
+                                }),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 16),
+                    // New Project Button
                     MouseRegion(
                       cursor: SystemMouseCursors.click,
                       child: GestureDetector(
-                        onTap: () => setState(() { _sortAscending = !_sortAscending; _filterProjects(); }),
+                        onTap: _openCreateProjectDialog,
                         child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2))),
-                          child: Icon(_sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: AppColors.theme['primaryColor'], size: 20),
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.theme['primaryColor'],
+                                (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.85),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.4),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.add_rounded, color: Colors.white, size: 22),
+                              SizedBox(width: 10),
+                              Text(
+                                'New Project',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 180,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2))),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _statusFilter,
-                          isExpanded: true,
-                          icon: Icon(Icons.filter_list_rounded, color: AppColors.theme['primaryColor']),
-                          items: [
-                            const DropdownMenuItem(value: 'all', child: Text('All Status')),
-                            ...ProjectStatus.allStatuses.map((status) => DropdownMenuItem(value: status, child: Text(ProjectStatus.getLabel(status)))),
-                          ],
-                          onChanged: (value) => setState(() { _statusFilter = value!; _filterProjects(); }),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      width: 280,
-                      height: 48,
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2))),
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(hintText: 'Search projects...', border: InputBorder.none, contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), prefixIcon: Icon(Icons.search, color: AppColors.theme['secondaryColor'], size: 20)),
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 16),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: _openCreateProjectDialog,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.theme['primaryColor'], (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8)]),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [BoxShadow(color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3), blurRadius: 12, offset: const Offset(0, 4))],
-                    ),
-                    child: const Row(children: [Icon(Icons.add, color: Colors.white, size: 20), SizedBox(width: 8), Text('New Project', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15))]),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 32),
           Expanded(
             child: _isLoadingProjects
                 ? GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 24, mainAxisSpacing: 24, childAspectRatio: 1.0),
-                    itemCount: 6,
-                    itemBuilder: (context, index) => _buildProjectCardShimmer(),
-                  )
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 24, mainAxisSpacing: 24, childAspectRatio: 1.0),
+              itemCount: 6,
+              itemBuilder: (context, index) => _buildProjectCardShimmer(),
+            )
                 : _filteredProjects.isEmpty
-                    ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.folder_open_rounded, size: 80, color: AppColors.theme['secondaryColor'].withValues(alpha: 0.3)), const SizedBox(height: 16), Text('No projects found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.theme['secondaryColor']))]))
-                    : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 24, mainAxisSpacing: 24, childAspectRatio: 1.0),
-                        itemCount: _filteredProjects.length,
-                        itemBuilder: (context, index) => _buildProjectCard(_filteredProjects[index]),
-                      ),
+                ? Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.folder_open_rounded, size: 80, color: AppColors.theme['secondaryColor'].withValues(alpha: 0.3)), const SizedBox(height: 16), Text('No projects found', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.theme['secondaryColor']))]))
+                : GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 3, crossAxisSpacing: 24, mainAxisSpacing: 24, childAspectRatio: 1.0),
+              itemCount: _filteredProjects.length,
+              itemBuilder: (context, index) => _buildProjectCard(_filteredProjects[index]),
+            ),
           ),
         ],
       ),
@@ -682,8 +904,8 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
                                     colors: budgetUsedPercent > 90
                                         ? [Colors.red, Colors.red.shade300]
                                         : budgetUsedPercent > 70
-                                            ? [Colors.orange, Colors.orange.shade300]
-                                            : [AppColors.theme['primaryColor'], (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.6)],
+                                        ? [Colors.orange, Colors.orange.shade300]
+                                        : [AppColors.theme['primaryColor'], (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.6)],
                                   ),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -1616,18 +1838,18 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
                                 ),
                                 child: _isCreating
                                     ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
-                                      )
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white)),
+                                )
                                     : const Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                                          SizedBox(width: 8),
-                                          Text('Create Project', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                                        ],
-                                      ),
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                                    SizedBox(width: 8),
+                                    Text('Create Project', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -1644,4 +1866,3 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
     );
   }
 }
-
