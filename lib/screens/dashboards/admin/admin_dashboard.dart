@@ -7,7 +7,9 @@ import '../../../core/routing/route_constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/toast_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/expense_service.dart';
 import '../../../models/user_model.dart';
+import '../../../models/expense_model.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -385,6 +387,12 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                     onTap: () => setState(() => _selectedMenu = 'users'),
                   ),
                   _buildMenuItem(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Expenses',
+                    isActive: _selectedMenu == 'expenses',
+                    onTap: () => setState(() => _selectedMenu = 'expenses'),
+                  ),
+                  _buildMenuItem(
                     icon: Icons.person_rounded,
                     title: 'Profile',
                     isActive: _selectedMenu == 'profile',
@@ -509,6 +517,8 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       return _buildProfileView();
     } else if (_selectedMenu == 'users') {
       return _buildUsersView();
+    } else if (_selectedMenu == 'expenses') {
+      return AdminExpensesView();
     }
     return const SizedBox();
   }
@@ -1879,5 +1889,706 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   String _formatDateShort(DateTime date) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     return '${months[date.month - 1]} ${date.day}, ${date.year.toString().substring(2)}';
+  }
+}
+
+// Admin Expenses View
+class AdminExpensesView extends StatefulWidget {
+  const AdminExpensesView({super.key});
+
+  @override
+  State<AdminExpensesView> createState() => _AdminExpensesViewState();
+}
+
+class _AdminExpensesViewState extends State<AdminExpensesView> {
+  List<ExpenseModel> _expenses = [];
+  List<ExpenseModel> _filteredExpenses = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  String _statusFilter = 'Approved'; // Show only Approved expenses by default
+  String _sortBy = 'createdAt';
+  bool _sortAscending = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _filterAndSortExpenses();
+      });
+    });
+    _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExpenses() async {
+    try {
+      setState(() => _isLoading = true);
+      final expenses = await ExpenseService.getAllExpenses();
+      if (mounted) {
+        setState(() {
+          _expenses = expenses;
+          _filterAndSortExpenses();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppToast.showError(context, 'Failed to load expenses');
+      }
+    }
+  }
+
+  void _filterAndSortExpenses() {
+    var filtered = _expenses;
+
+    // Apply status filter
+    if (_statusFilter != 'All Status') {
+      filtered = filtered.where((expense) => expense.status == _statusFilter).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((expense) {
+        return expense.name.toLowerCase().contains(query) ||
+            expense.description.toLowerCase().contains(query) ||
+            expense.projectName.toLowerCase().contains(query) ||
+            expense.submitterName.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) {
+      int comparison = 0;
+      switch (_sortBy) {
+        case 'amount':
+          comparison = a.amount.compareTo(b.amount);
+          break;
+        case 'name':
+          comparison = a.name.compareTo(b.name);
+          break;
+        case 'createdAt':
+        default:
+          comparison = (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now());
+      }
+      return _sortAscending ? comparison : -comparison;
+    });
+
+    setState(() {
+      _filteredExpenses = filtered;
+    });
+  }
+
+  Future<void> _approveExpense(ExpenseModel expense) async {
+    try {
+      final updated = await ExpenseService.updateExpenseStatus(expense.id, 'Reimbursed');
+      if (updated != null && mounted) {
+        AppToast.showSuccess(context, 'Expense marked as reimbursed');
+        _loadExpenses();
+      } else if (mounted) {
+        AppToast.showError(context, 'Failed to approve expense');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(context, 'Error: $e');
+      }
+    }
+  }
+
+  Future<void> _rejectExpense(ExpenseModel expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEE2E2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.warning_rounded, color: Color(0xFFEF4444), size: 32),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Reject Expense?',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to reject "${expense.name}"?',
+                style: const TextStyle(fontSize: 14, color: Color(0xFF64748B)),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Reject'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final updated = await ExpenseService.updateExpenseStatus(expense.id, 'RejectedByAdmin');
+        if (updated != null && mounted) {
+          AppToast.showSuccess(context, 'Expense rejected by admin');
+          _loadExpenses();
+        } else if (mounted) {
+          AppToast.showError(context, 'Failed to reject expense');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.showError(context, 'Error: $e');
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Row
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Expenses Management',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.theme['textColor'],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Review and approve project expenses',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.theme['secondaryColor'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Controls Row
+                Row(
+                  children: [
+                    // Search Bar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search by name, description, project, or submitter...',
+                            hintStyle: TextStyle(color: AppColors.theme['secondaryColor']),
+                            prefixIcon: Icon(Icons.search_rounded, color: AppColors.theme['secondaryColor']),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Sort By
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _sortBy,
+                          icon: Icon(Icons.sort_rounded, color: AppColors.theme['primaryColor']),
+                          items: const [
+                            DropdownMenuItem(value: 'createdAt', child: Text('Date')),
+                            DropdownMenuItem(value: 'amount', child: Text('Amount')),
+                            DropdownMenuItem(value: 'name', child: Text('Name')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _sortBy = value!;
+                              _filterAndSortExpenses();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Sort Direction
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _sortAscending = !_sortAscending;
+                            _filterAndSortExpenses();
+                          });
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Icon(
+                            _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                            color: AppColors.theme['primaryColor'],
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Status Filter
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _statusFilter,
+                          icon: Icon(Icons.filter_list_rounded, color: AppColors.theme['primaryColor']),
+                          items: ['All Status', ...ExpenseStatus.allStatuses].map((status) {
+                            return DropdownMenuItem(
+                              value: status,
+                              child: Text(status == 'All Status' ? status : ExpenseStatus.getLabel(status)),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _statusFilter = value!;
+                              _filterAndSortExpenses();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Refresh Button
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _loadExpenses,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: AppColors.theme['primaryColor'],
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Expenses List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredExpenses.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_rounded,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No expenses found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try adjusting your search or filters',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _filteredExpenses.length,
+                        itemBuilder: (context, index) {
+                          return _buildExpenseCard(_filteredExpenses[index]);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseCard(ExpenseModel expense) {
+    final statusColor = _getExpenseStatusColor(expense.status);
+    final canApproveOrReject = expense.status == 'Approved';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        expense.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.theme['textColor'],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        expense.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.theme['secondaryColor'],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '\$${expense.amount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.theme['primaryColor'],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        ExpenseStatus.getLabel(expense.status),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildInfoChip(Icons.folder_rounded, expense.projectName),
+                const SizedBox(width: 12),
+                _buildInfoChip(Icons.calendar_month, expense.expensePeriod),
+                const SizedBox(width: 12),
+                Tooltip(
+                  message: '${expense.submittedBy?.roleLabel ?? 'User'}\n${expense.submittedBy?.email ?? ''}',
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  preferBelow: false,
+                  child: _buildInfoChip(Icons.person, expense.submitterName),
+                ),
+                const SizedBox(width: 12),
+                if (expense.billable)
+                  _buildInfoChip(Icons.check_circle, 'Billable'),
+              ],
+            ),
+            // Approve/Reject buttons for Approved status
+            if (canApproveOrReject) ...[
+              const SizedBox(height: 16),
+              const Divider(height: 1),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => _approveExpense(expense),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF10B981), Color(0xFF059669)],
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white, size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Reimburse',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => _rejectExpense(expense),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFEF4444)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.cancel, color: Color(0xFFEF4444), size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                'Reject by Admin',
+                                style: TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF64748B)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getExpenseStatusColor(String status) {
+    switch (status) {
+      case 'Submitted':
+        return const Color(0xFF3B82F6);
+      case 'Approved':
+        return const Color(0xFF10B981);
+      case 'Rejected':
+        return const Color(0xFFEF4444);
+      case 'RejectedByAdmin':
+        return const Color(0xFFDC2626);
+      case 'Reimbursed':
+        return const Color(0xFFA65899);
+      default:
+        return const Color(0xFF64748B);
+    }
   }
 }

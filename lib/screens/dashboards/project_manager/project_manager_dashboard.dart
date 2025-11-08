@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/routing/route_constants.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/toast_service.dart';
 import '../../../services/project_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/expense_service.dart';
 import '../../../models/project_model.dart';
 import '../../../models/user_model.dart';
+import '../../../models/expense_model.dart';
 import 'project_dialog_views.dart';
 
 class ProjectManagerDashboard extends StatefulWidget {
@@ -258,6 +261,7 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
                     child: Text('MENU', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.theme['secondaryColor'], letterSpacing: 1.5)),
                   ),
                   _buildMenuItem(icon: Icons.folder_rounded, title: 'Projects', isActive: _selectedMenu == 'projects', onTap: () => setState(() => _selectedMenu = 'projects')),
+                  _buildMenuItem(icon: Icons.receipt_long_rounded, title: 'Expenses', isActive: _selectedMenu == 'expenses', onTap: () => setState(() => _selectedMenu = 'expenses')),
                   _buildMenuItem(icon: Icons.dashboard_rounded, title: 'Dashboard', isActive: _selectedMenu == 'dashboard', onTap: () => setState(() => _selectedMenu = 'dashboard')),
                   _buildMenuItem(icon: Icons.person_rounded, title: 'Profile', isActive: _selectedMenu == 'profile', onTap: () => setState(() => _selectedMenu = 'profile')),
                 ],
@@ -328,6 +332,8 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
       return _buildProjectsView();
     } else if (_selectedMenu == 'dashboard') {
       return _buildDashboardView();
+    } else if (_selectedMenu == 'expenses') {
+      return _buildExpensesView();
     } else if (_selectedMenu == 'profile') {
       return _buildProfileView();
     }
@@ -644,6 +650,28 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Refresh Button
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _fetchProjects,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: AppColors.theme['primaryColor'],
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -1061,6 +1089,10 @@ class _ProjectManagerDashboardState extends State<ProjectManagerDashboard> {
     }
   }
 
+  Widget _buildExpensesView() {
+    return GeneralExpensesView();
+  }
+
   Widget _buildProfileView() {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
@@ -1431,6 +1463,7 @@ class _ProjectDetailsDialogState extends State<ProjectDetailsDialog> {
                   _buildTabButton('Edit Project', Icons.edit_rounded, 'edit'),
                   _buildTabButton('Tasks', Icons.task_alt_rounded, 'tasks'),
                   _buildTabButton('Team Members', Icons.people_rounded, 'members'),
+                  _buildTabButton('Expenses', Icons.receipt_long_rounded, 'expenses'),
                   const Spacer(),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -1450,7 +1483,15 @@ class _ProjectDetailsDialogState extends State<ProjectDetailsDialog> {
                 ],
               ),
             ),
-            Expanded(child: _selectedTab == 'edit' ? EditProjectView(project: widget.project, onUpdate: widget.onUpdate) : _selectedTab == 'tasks' ? TasksView(project: widget.project) : TeamMembersView(project: widget.project)),
+            Expanded(
+              child: _selectedTab == 'edit'
+                  ? EditProjectView(project: widget.project, onUpdate: widget.onUpdate)
+                  : _selectedTab == 'tasks'
+                      ? TasksView(project: widget.project)
+                      : _selectedTab == 'members'
+                          ? TeamMembersView(project: widget.project)
+                          : ExpensesView(project: widget.project),
+            ),
           ],
         ),
       ),
@@ -1864,5 +1905,1634 @@ class _CreateProjectDialogState extends State<CreateProjectDialog> {
         ),
       ),
     );
+  }
+}
+
+// EXPENSES VIEW
+class ExpensesView extends StatefulWidget {
+  final ProjectModel project;
+
+  const ExpensesView({super.key, required this.project});
+
+  @override
+  State<ExpensesView> createState() => _ExpensesViewState();
+}
+
+class _ExpensesViewState extends State<ExpensesView> {
+  List<ExpenseModel> _expenses = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExpenses() async {
+    setState(() => _isLoading = true);
+    try {
+      final expenses = await ExpenseService.getProjectExpenses(widget.project.id);
+      if (mounted) {
+        setState(() {
+          _expenses = expenses;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppToast.showError(context, 'Failed to load expenses: $e');
+      }
+    }
+  }
+
+  List<ExpenseModel> get _filteredExpenses {
+    if (_searchQuery.isEmpty) return _expenses;
+    return _expenses.where((expense) {
+      final query = _searchQuery.toLowerCase();
+      return expense.name.toLowerCase().contains(query) ||
+          expense.description.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  void _showAddExpenseDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AddExpenseDialog(
+        project: widget.project,
+        onAdded: _loadExpenses,
+      ),
+    );
+  }
+
+  Future<void> _deleteExpense(ExpenseModel expense) async {
+    // Show modern delete confirmation
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.delete_rounded,
+                  size: 40,
+                  color: Color(0xFFEF4444),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Delete Expense',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to delete "${expense.name}"? This action cannot be undone.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Row(
+                children: [
+                  Expanded(
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(false),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(context).pop(true),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Delete',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final success = await ExpenseService.deleteExpense(expense.id);
+        if (success && mounted) {
+          AppToast.showSuccess(context, 'Expense deleted successfully');
+          _loadExpenses();
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.showError(context, 'Failed to delete expense: $e');
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header with search and add button
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              borderRadius: const BorderRadius.only(
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (value) => setState(() => _searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search expenses...',
+                        hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFFA65899), size: 20),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                  child: const Icon(Icons.clear, color: Color(0xFF94A3B8), size: 20),
+                                ),
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: _loadExpenses,
+                    child: Container(
+                      width: 45,
+                      height: 45,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: AppColors.theme['primaryColor'],
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: _showAddExpenseDialog,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.add, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Add Expense',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Expenses list
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredExpenses.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_rounded,
+                              size: 80,
+                              color: (AppColors.theme['secondaryColor'] as Color).withValues(alpha: 0.3),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty ? 'No expenses yet' : 'No expenses found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        padding: const EdgeInsets.all(24),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 1.8,
+                        ),
+                        itemCount: _filteredExpenses.length,
+                        itemBuilder: (context, index) {
+                          final expense = _filteredExpenses[index];
+                          return _buildExpenseCard(expense);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseCard(ExpenseModel expense) {
+    final statusColor = _getStatusColor(expense.status);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header row with name and status
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  expense.name,
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  ExpenseStatus.getLabel(expense.status),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Description
+          Text(
+            expense.description,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 16),
+          // Amount
+          Row(
+            children: [
+              Icon(
+                Icons.payments_rounded,
+                size: 20,
+                color: AppColors.theme['primaryColor'],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '\$${expense.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.theme['primaryColor'],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
+          // Details section - 2 rows
+          Row(
+            children: [
+              Expanded(
+                child: _buildPMDetailItem(Icons.folder_rounded, expense.projectName ?? 'N/A'),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildPMDetailItem(Icons.calendar_month, expense.expensePeriod),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Tooltip(
+                  message: '${expense.submittedBy?.roleLabel ?? 'User'}\n${expense.submittedBy?.email ?? ''}',
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  preferBelow: false,
+                  child: _buildPMDetailItem(Icons.person, expense.submitterName),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: expense.billable
+                    ? _buildPMDetailItem(Icons.check_circle, 'Billable')
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+          // Approve/Reject buttons for Submitted expenses
+          if (expense.status == 'Submitted') ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => _approveExpense(expense),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF10B981), Color(0xFF059669)],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            Text(
+                              'Approve',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      onTap: () => _rejectExpense(expense),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFEF4444)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cancel, color: Color(0xFFEF4444), size: 18),
+                            SizedBox(width: 6),
+                            Text(
+                              'Reject',
+                              style: TextStyle(
+                                color: Color(0xFFEF4444),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _approveExpense(ExpenseModel expense) async {
+    try {
+      final updated = await ExpenseService.updateExpenseStatus(expense.id, 'Approved');
+      if (updated != null && mounted) {
+        AppToast.showSuccess(context, 'Expense approved successfully');
+        _loadExpenses();
+      } else if (mounted) {
+        AppToast.showError(context, 'Failed to approve expense');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(context, 'Error: $e');
+      }
+    }
+  }
+
+  Future<void> _rejectExpense(ExpenseModel expense) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEE2E2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.warning_rounded,
+                  color: Color(0xFFEF4444),
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Reject Expense?',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Are you sure you want to reject "${expense.name}"?',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF64748B),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Reject'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final updated = await ExpenseService.updateExpenseStatus(expense.id, 'Rejected');
+        if (updated != null && mounted) {
+          AppToast.showSuccess(context, 'Expense rejected');
+          _loadExpenses();
+        } else if (mounted) {
+          AppToast.showError(context, 'Failed to reject expense');
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.showError(context, 'Error: $e');
+        }
+      }
+    }
+  }
+
+  Widget _buildPMDetailItem(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: Colors.grey.shade600),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF64748B)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Submitted':
+        return const Color(0xFF3B82F6);
+      case 'Approved':
+        return const Color(0xFF10B981);
+      case 'Rejected':
+        return const Color(0xFFEF4444);
+      case 'RejectedByAdmin':
+        return const Color(0xFFDC2626);
+      case 'Reimbursed':
+        return const Color(0xFFA65899);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+}
+
+// ADD EXPENSE DIALOG
+class AddExpenseDialog extends StatefulWidget {
+  final ProjectModel project;
+  final VoidCallback onAdded;
+
+  const AddExpenseDialog({super.key, required this.project, required this.onAdded});
+
+  @override
+  State<AddExpenseDialog> createState() => _AddExpenseDialogState();
+}
+
+class _AddExpenseDialogState extends State<AddExpenseDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _descController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _periodController = TextEditingController();
+  bool _billable = true;
+  String _status = 'Approved'; // Project managers' expenses are auto-approved
+  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    _amountController.dispose();
+    _periodController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitExpense() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      final expenseData = {
+        'name': _nameController.text.trim(),
+        'description': _descController.text.trim(),
+        'expensePeriod': _periodController.text.trim(),
+        'project': widget.project.id,
+        'amount': double.parse(_amountController.text),
+        'billable': _billable,
+        'status': _status,
+      };
+
+      final expense = await ExpenseService.createExpense(expenseData);
+      if (expense != null && mounted) {
+        AppToast.showSuccess(context, 'Expense added successfully');
+        widget.onAdded();
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.showError(context, 'Failed to add expense: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        width: 600,
+        padding: const EdgeInsets.all(32),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.theme['primaryColor'],
+                        (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Add Expense',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1E293B),
+                    ),
+                  ),
+                ),
+                MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.close, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Expense Name',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          hintText: 'e.g., Office Supplies',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.theme['primaryColor'], width: 2),
+                          ),
+                        ),
+                        validator: (value) => value!.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Amount',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _amountController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          hintText: 'Enter amount (e.g., 150.50)',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          prefixIcon: const Icon(Icons.attach_money, size: 20),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.theme['primaryColor'], width: 2),
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value!.trim().isEmpty) return 'Required';
+                          if (double.tryParse(value) == null) return 'Invalid amount';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Expense Period',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          onTap: () async {
+                            final DateTime? picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2030),
+                              builder: (context, child) {
+                                return Theme(
+                                  data: Theme.of(context).copyWith(
+                                    colorScheme: ColorScheme.light(
+                                      primary: AppColors.theme['primaryColor'],
+                                      onPrimary: Colors.white,
+                                      onSurface: Colors.black,
+                                    ),
+                                  ),
+                                  child: child!,
+                                );
+                              },
+                            );
+                            if (picked != null) {
+                              final formattedDate = DateFormat('MMM yyyy').format(picked);
+                              setState(() {
+                                _periodController.text = formattedDate;
+                              });
+                            }
+                          },
+                          child: AbsorbPointer(
+                            child: TextFormField(
+                              controller: _periodController,
+                              decoration: InputDecoration(
+                                hintText: 'Select expense period',
+                                filled: true,
+                                fillColor: const Color(0xFFF8FAFC),
+                                prefixIcon: const Icon(Icons.calendar_month, size: 20),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade200),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.grey.shade200),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: AppColors.theme['primaryColor'], width: 2),
+                                ),
+                              ),
+                              validator: (value) => value!.trim().isEmpty ? 'Required' : null,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Description',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _descController,
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          hintText: 'Add details about this expense...',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade200),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.theme['primaryColor'], width: 2),
+                          ),
+                        ),
+                        validator: (value) => value!.trim().isEmpty ? 'Required' : null,
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _billable,
+                            onChanged: (value) => setState(() => _billable = value ?? true),
+                            activeColor: AppColors.theme['primaryColor'],
+                          ),
+                          const Text(
+                            'Billable',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Text(
+                                    'Cancel',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: _isSubmitting ? null : _submitExpense,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        AppColors.theme['primaryColor'],
+                                        (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: _isSubmitting
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                                            ),
+                                          ),
+                                        )
+                                      : const Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.check, color: Colors.white, size: 20),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'Add Expense',
+                                              style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// General Expenses View - Shows all expenses across all projects
+class GeneralExpensesView extends StatefulWidget {
+  const GeneralExpensesView({super.key});
+
+  @override
+  State<GeneralExpensesView> createState() => _GeneralExpensesViewState();
+}
+
+class _GeneralExpensesViewState extends State<GeneralExpensesView> {
+  List<ExpenseModel> _expenses = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  String _statusFilter = 'All Status';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExpenses() async {
+    try {
+      setState(() => _isLoading = true);
+      final expenses = await ExpenseService.getMyExpenses();
+      if (mounted) {
+        setState(() {
+          _expenses = expenses;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppToast.showError(context, 'Failed to load expenses');
+      }
+    }
+  }
+
+  List<ExpenseModel> get _filteredExpenses {
+    var filtered = _expenses;
+
+    // Apply status filter
+    if (_statusFilter != 'All Status') {
+      filtered = filtered.where((expense) => expense.status == _statusFilter).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((expense) {
+        return expense.name.toLowerCase().contains(query) ||
+            expense.description.toLowerCase().contains(query) ||
+            expense.projectName.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Modern Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Row
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Expenses',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.theme['textColor'],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Track and manage all project expenses',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.theme['secondaryColor'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Controls Row
+                Row(
+                  children: [
+                    // Search Bar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() => _searchQuery = value),
+                          decoration: InputDecoration(
+                            hintText: 'Search expenses...',
+                            hintStyle: TextStyle(color: AppColors.theme['secondaryColor']),
+                            prefixIcon: Icon(Icons.search_rounded, color: AppColors.theme['secondaryColor']),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Status Filter
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _statusFilter,
+                          icon: Icon(Icons.arrow_drop_down, color: AppColors.theme['primaryColor']),
+                          items: ['All Status', ...ExpenseStatus.allStatuses].map((status) {
+                            return DropdownMenuItem(value: status, child: Text(status));
+                          }).toList(),
+                          onChanged: (value) => setState(() => _statusFilter = value!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Refresh Button
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.refresh_rounded, color: AppColors.theme['primaryColor']),
+                        onPressed: _loadExpenses,
+                        tooltip: 'Refresh',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Expenses List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredExpenses.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_rounded,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty && _statusFilter == 'All Status'
+                                  ? 'No expenses found'
+                                  : 'No matching expenses',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _searchQuery.isEmpty && _statusFilter == 'All Status'
+                                  ? 'Expenses will appear here once added to projects'
+                                  : 'Try adjusting your search or filters',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 24,
+                          childAspectRatio: 1.8,
+                        ),
+                        itemCount: _filteredExpenses.length,
+                        itemBuilder: (context, index) {
+                          return _buildExpenseCard(_filteredExpenses[index]);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseCard(ExpenseModel expense) {
+    final statusColor = _getExpenseStatusColor(expense.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade100, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with gradient
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  statusColor.withValues(alpha: 0.15),
+                  statusColor.withValues(alpha: 0.05),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        expense.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.theme['textColor'],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        expense.status,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  expense.description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppColors.theme['secondaryColor'],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Amount
+                  Row(
+                    children: [
+                      Icon(Icons.attach_money_rounded, size: 18, color: AppColors.theme['secondaryColor']),
+                      const SizedBox(width: 6),
+                      Text(
+                        '\$${expense.amount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.theme['primaryColor'],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Info chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      // Project
+                      if (expense.projectName.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.folder_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                              const SizedBox(width: 4),
+                              Text(
+                                expense.projectName,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.theme['secondaryColor'],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Period
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                            const SizedBox(width: 4),
+                            Text(
+                              expense.expensePeriod,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.theme['secondaryColor'],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Billable
+                      if (expense.billable)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.receipt_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Billable',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.theme['secondaryColor'],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Submitter
+                  if (expense.submitterName.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.person_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                        const SizedBox(width: 4),
+                        Text(
+                          'By ${expense.submitterName}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.theme['secondaryColor'],
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getExpenseStatusColor(String status) {
+    switch (status) {
+      case 'Submitted':
+        return const Color(0xFF3B82F6);
+      case 'Approved':
+        return const Color(0xFF10B981);
+      case 'Rejected':
+        return const Color(0xFFEF4444);
+      case 'RejectedByAdmin':
+        return const Color(0xFFDC2626);
+      case 'Reimbursed':
+        return const Color(0xFFA65899);
+      default:
+        return const Color(0xFF64748B);
+    }
   }
 }

@@ -905,16 +905,14 @@ class _TasksViewState extends State<TasksView> {
       ),
     )
         : Padding(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       child: Row(
+        spacing: 8,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(child: _buildKanbanColumn('New', 'new', newTasks, const Color(0xFF6B7280))),
-          const SizedBox(width: 16),
           Expanded(child: _buildKanbanColumn('In Progress', 'in_progress', inProgressTasks, const Color(0xFF3B82F6))),
-          const SizedBox(width: 16),
           Expanded(child: _buildKanbanColumn('Blocked', 'blocked', blockedTasks, const Color(0xFFEF4444))),
-          const SizedBox(width: 16),
           Expanded(child: _buildKanbanColumn('Done', 'done', doneTasks, const Color(0xFF10B981))),
         ],
       ),
@@ -2193,8 +2191,9 @@ Widget buildShimmerBox({double width = double.infinity, double height = 20, doub
 
 Widget buildKanbanShimmer() {
   return Padding(
-    padding: const EdgeInsets.all(24),
+    padding: const EdgeInsets.all(16),
     child: Row(
+      spacing: 8,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: List.generate(4, (columnIndex) {
         final colors = [
@@ -2205,7 +2204,6 @@ Widget buildKanbanShimmer() {
         ];
         return Expanded(
           child: Container(
-            margin: EdgeInsets.only(right: columnIndex < 3 ? 16 : 0),
             decoration: BoxDecoration(
               color: colors[columnIndex].withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),

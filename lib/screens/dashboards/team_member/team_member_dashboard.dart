@@ -5,8 +5,10 @@ import 'package:shimmer/shimmer.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/routing/route_constants.dart';
 import '../../../models/project_model.dart';
+import '../../../models/expense_model.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/project_service.dart';
+import '../../../services/expense_service.dart';
 import '../../../services/toast_service.dart';
 import 'team_member_project_dialog.dart';
 
@@ -103,8 +105,14 @@ class _TeamMemberDashboardState extends State<TeamMemberDashboard> {
       return _buildProfileView();
     } else if (_selectedMenu == 'projects') {
       return _buildProjectsView();
+    } else if (_selectedMenu == 'expenses') {
+      return _buildExpensesView();
     }
     return const SizedBox();
+  }
+
+  Widget _buildExpensesView() {
+    return TeamMemberExpensesView();
   }
 
   Widget _buildSidebar(user) {
@@ -267,6 +275,12 @@ class _TeamMemberDashboardState extends State<TeamMemberDashboard> {
                     title: 'Projects',
                     isActive: _selectedMenu == 'projects',
                     onTap: () => setState(() => _selectedMenu = 'projects'),
+                  ),
+                  _buildMenuItem(
+                    icon: Icons.receipt_long_rounded,
+                    title: 'Expenses',
+                    isActive: _selectedMenu == 'expenses',
+                    onTap: () => setState(() => _selectedMenu = 'expenses'),
                   ),
                   _buildMenuItem(
                     icon: Icons.person_rounded,
@@ -1281,5 +1295,545 @@ class _TeamMemberDashboardState extends State<TeamMemberDashboard> {
         onProjectUpdated: () => _loadProjects(),
       ),
     );
+  }
+}
+
+// Team Member Expenses View - Shows all expenses across all projects
+class TeamMemberExpensesView extends StatefulWidget {
+  const TeamMemberExpensesView({super.key});
+
+  @override
+  State<TeamMemberExpensesView> createState() => _TeamMemberExpensesViewState();
+}
+
+class _TeamMemberExpensesViewState extends State<TeamMemberExpensesView> {
+  List<ExpenseModel> _expenses = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  String _statusFilter = 'All Status';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExpenses() async {
+    try {
+      setState(() => _isLoading = true);
+      final expenses = await ExpenseService.getMyExpenses();
+      if (mounted) {
+        setState(() {
+          _expenses = expenses;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppToast.showError(context, 'Failed to load expenses');
+      }
+    }
+  }
+
+  List<ExpenseModel> get _filteredExpenses {
+    var filtered = _expenses;
+
+    // Apply status filter
+    if (_statusFilter != 'All Status') {
+      filtered = filtered.where((expense) => expense.status == _statusFilter).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((expense) {
+        return expense.name.toLowerCase().contains(query) ||
+            expense.description.toLowerCase().contains(query) ||
+            expense.projectName.toLowerCase().contains(query);
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Modern Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Row
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Expenses',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.theme['textColor'],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Track and manage all project expenses',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.theme['secondaryColor'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Controls Row
+                Row(
+                  children: [
+                    // Search Bar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) => setState(() => _searchQuery = value),
+                          decoration: InputDecoration(
+                            hintText: 'Search expenses...',
+                            hintStyle: TextStyle(color: AppColors.theme['secondaryColor']),
+                            prefixIcon: Icon(Icons.search_rounded, color: AppColors.theme['secondaryColor']),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Status Filter
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _statusFilter,
+                          icon: Icon(Icons.arrow_drop_down, color: AppColors.theme['primaryColor']),
+                          items: ['All Status', ...ExpenseStatus.allStatuses].map((status) {
+                            return DropdownMenuItem(value: status, child: Text(status));
+                          }).toList(),
+                          onChanged: (value) => setState(() => _statusFilter = value!),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Refresh Button
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.refresh_rounded, color: AppColors.theme['primaryColor']),
+                        onPressed: _loadExpenses,
+                        tooltip: 'Refresh',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Expenses List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredExpenses.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.receipt_long_rounded,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isEmpty && _statusFilter == 'All Status'
+                                  ? 'No expenses found'
+                                  : 'No matching expenses',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _searchQuery.isEmpty && _statusFilter == 'All Status'
+                                  ? 'Expenses will appear here once added to projects'
+                                  : 'Try adjusting your search or filters',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 24,
+                          mainAxisSpacing: 24,
+                          childAspectRatio: 1.8,
+                        ),
+                        itemCount: _filteredExpenses.length,
+                        itemBuilder: (context, index) {
+                          return _buildExpenseCard(_filteredExpenses[index]);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseCard(ExpenseModel expense) {
+    final statusColor = _getExpenseStatusColor(expense.status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade100, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with name and status
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  statusColor.withValues(alpha: 0.12),
+                  statusColor.withValues(alpha: 0.04),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message: 'Expense Name: ${expense.name}',
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    preferBelow: false,
+                    child: Text(
+                      expense.name,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.theme['textColor'],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: statusColor.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    ExpenseStatus.getLabel(expense.status),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text(
+              expense.description,
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.theme['secondaryColor'],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const Spacer(),
+          // Amount - centered and prominent
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.payments_rounded,
+                  size: 24,
+                  color: AppColors.theme['primaryColor'],
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '\$${expense.amount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.theme['primaryColor'],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Spacer(),
+          // Info section
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildDetailItem(Icons.folder_rounded, expense.projectName),
+                ),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: Colors.grey.shade200,
+                ),
+                Expanded(
+                  child: _buildDetailItem(Icons.calendar_month, expense.expensePeriod),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message: '${expense.submittedBy?.roleLabel ?? 'User'}\n${expense.submittedBy?.email ?? ''}',
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade800,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    textStyle: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    preferBelow: false,
+                    child: _buildDetailItem(Icons.person, expense.submitterName),
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 30,
+                  color: Colors.grey.shade200,
+                ),
+                Expanded(
+                  child: _buildDetailItem(
+                    expense.billable ? Icons.check_circle : Icons.cancel,
+                    expense.billable ? 'Billable' : 'Non-billable',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailItem(IconData icon, String text) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, size: 16, color: AppColors.theme['secondaryColor']),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppColors.theme['secondaryColor'],
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.theme['secondaryColor']),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: AppColors.theme['secondaryColor'],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getExpenseStatusColor(String status) {
+    switch (status) {
+      case 'Submitted':
+        return const Color(0xFF3B82F6);
+      case 'Approved':
+        return const Color(0xFF10B981);
+      case 'Rejected':
+        return const Color(0xFFEF4444);
+      case 'RejectedByAdmin':
+        return const Color(0xFFDC2626);
+      case 'Reimbursed':
+        return const Color(0xFFA65899);
+      default:
+        return const Color(0xFF64748B);
+    }
   }
 }
