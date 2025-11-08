@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/routing/route_helper.dart';
-import '../../../providers/auth_provider.dart';
-import '../../../widgets/animated_fade_in.dart';
-import '../../../widgets/custom_button.dart';
-import '../../../models/user_model.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/routing/route_helper.dart';
+import '../../providers/auth_provider.dart';
+import '../../models/user_model.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -20,6 +18,8 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Profile'),
         backgroundColor: AppColors.theme['primaryColor'],
+        foregroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -30,29 +30,21 @@ class ProfileScreen extends StatelessWidget {
           },
         ),
       ),
-      body: AnimatedFadeIn(
-        child: Row(
-          children: [
-            // Left sidebar with user info
-            Container(
-              width: 350,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(2, 0),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                child: Column(
+      body: Container(
+        padding: const EdgeInsets.all(48),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 1000),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(40),
+                      width: 140,
+                      height: 140,
                       decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -61,307 +53,233 @@ class ProfileScreen extends StatelessWidget {
                             (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
                           ],
                         ),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 120,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.person,
-                              size: 60,
-                              color: AppColors.theme['primaryColor'],
-                            ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 30,
+                            offset: const Offset(0, 15),
                           ),
-                          const SizedBox(height: 24),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          (user?.name.isNotEmpty ?? false) ? user!.name[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
                             user?.name ?? 'User',
-                            style: const TextStyle(
-                              fontSize: 26,
+                            style: TextStyle(
+                              fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: AppColors.theme['textColor'],
                             ),
-                            textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             user?.email ?? '',
                             style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              _getUserTypeLabel(user?.userType ?? ''),
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Quick Actions',
-                            style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.theme['textColor'],
+                              color: AppColors.theme['secondaryColor'],
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildActionButton(
-                            icon: Icons.edit_outlined,
-                            label: 'Edit Profile',
-                            onTap: () {},
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButton(
-                            icon: Icons.settings_outlined,
-                            label: 'Settings',
-                            onTap: () {},
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButton(
-                            icon: Icons.security_outlined,
-                            label: 'Security',
-                            onTap: () {},
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.theme['primaryColor'],
+                                      (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(25),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  _getUserTypeLabel(user?.userType ?? ''),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(25),
+                                  border: Border.all(
+                                    color: Colors.green.shade200,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Active',
+                                      style: TextStyle(
+                                        color: Colors.green.shade700,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            // Main content area
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(50),
-                child: Center(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 800),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Profile Information',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.theme['textColor'],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'View and manage your account details',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.theme['secondaryColor'],
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildInfoCard(
-                                      Icons.email_outlined,
-                                      'Email Address',
-                                      user?.email ?? '',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: _buildInfoCard(
-                                      Icons.phone_outlined,
-                                      'Phone Number',
-                                      user?.phone ?? 'Not provided',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildInfoCard(
-                                      Icons.person_outline,
-                                      'User Type',
-                                      _getUserTypeLabel(user?.userType ?? ''),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: _buildInfoCard(
-                                      Icons.calendar_today_outlined,
-                                      'Member Since',
-                                      _formatDate(user?.createdAt ?? ''),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CustomButton(
-                                title: 'Refresh Profile',
-                                onTap: () async {
-                                  await authProvider.refreshProfile();
-                                },
-                                icon: Icons.refresh_rounded,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () {},
-                                icon: const Icon(Icons.edit_outlined),
-                                label: const Text('Edit Profile'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.theme['primaryColor'],
-                                  side: BorderSide(
-                                    color: AppColors.theme['primaryColor'],
-                                    width: 2,
-                                  ),
-                                  padding: const EdgeInsets.symmetric(vertical: 20),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                const SizedBox(height: 48),
+                GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: 3,
+                  childAspectRatio: 1.8,
+                  crossAxisSpacing: 24,
+                  mainAxisSpacing: 24,
+                  children: [
+                    _buildProfileInfoCard(
+                      Icons.email_rounded,
+                      'Email Address',
+                      user?.email ?? 'N/A',
+                      Colors.blue,
                     ),
-                  ),
+                    _buildProfileInfoCard(
+                      Icons.phone_rounded,
+                      'Phone Number',
+                      user?.phone ?? 'Not provided',
+                      Colors.green,
+                    ),
+                    _buildProfileInfoCard(
+                      Icons.attach_money_rounded,
+                      'Hourly Rate',
+                      '\$${user?.hourlyRate ?? 0}/hr',
+                      Colors.orange,
+                    ),
+                    _buildProfileInfoCard(
+                      Icons.calendar_today_rounded,
+                      'Last Login',
+                      user?.lastLogin != null
+                          ? _formatDate(user!.lastLogin!)
+                          : 'N/A',
+                      Colors.purple,
+                    ),
+                    _buildProfileInfoCard(
+                      Icons.schedule_rounded,
+                      'Joined',
+                      user?.createdAt != null
+                          ? _formatDate(DateTime.parse(user!.createdAt!))
+                          : 'N/A',
+                      Colors.indigo,
+                    ),
+                    _buildProfileInfoCard(
+                      Icons.update_rounded,
+                      'Last Updated',
+                      user?.updatedAt != null
+                          ? _formatDate(DateTime.parse(user!.updatedAt!))
+                          : 'N/A',
+                      Colors.teal,
+                    ),
+                  ],
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value) {
+  Widget _buildProfileInfoCard(IconData icon, String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.theme['backgroundColor'],
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+        border: Border.all(
+          color: color.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon, color: AppColors.theme['primaryColor'], size: 24),
-              const SizedBox(width: 12),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
                   color: AppColors.theme['secondaryColor'],
+                  fontWeight: FontWeight.w500,
                 ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.theme['textColor'],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.theme['textColor'],
-            ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppColors.theme['backgroundColor'],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.theme['primaryColor'], size: 22),
-            const SizedBox(width: 14),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.theme['textColor'],
-              ),
-            ),
-            const Spacer(),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: AppColors.theme['secondaryColor'],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -370,13 +288,8 @@ class ProfileScreen extends StatelessWidget {
     return UserTypes.getLabel(userType);
   }
 
-  String _formatDate(String date) {
-    if (date.isEmpty) return 'Unknown';
-    try {
-      final parsedDate = DateTime.parse(date);
-      return '${parsedDate.day}/${parsedDate.month}/${parsedDate.year}';
-    } catch (e) {
-      return 'Unknown';
-    }
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 }

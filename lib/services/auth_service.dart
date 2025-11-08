@@ -136,10 +136,20 @@ class AuthService {
           debugPrint('🌐 AuthService.getProfile: Response data = $data');
         }
 
-        if (data['success'] == true && data['data'] != null) {
-          final user = UserModel.fromJson(data['data']);
+        if (data['success'] == true && data['data'] != null && data['data']['user'] != null) {
+          if (kDebugMode) {
+            debugPrint('🌐 AuthService.getProfile: Raw user JSON = ${data['data']['user']}');
+            debugPrint('   Direct access - name: ${data['data']['user']['name']}');
+            debugPrint('   Direct access - email: ${data['data']['user']['email']}');
+            debugPrint('   Direct access - userType: ${data['data']['user']['userType']}');
+          }
+          final userJson = data['data']['user'] as Map<String, dynamic>;
+          final user = UserModel.fromJson(userJson);
           if (kDebugMode) {
             debugPrint('🌐 AuthService.getProfile: Parsed user = ${user.toJson()}');
+            debugPrint('   Name: "${user.name}" (isEmpty: ${user.name.isEmpty})');
+            debugPrint('   Email: "${user.email}" (isEmpty: ${user.email.isEmpty})');
+            debugPrint('   UserType: "${user.userType}"');
           }
 
           // Only save if we got valid user data

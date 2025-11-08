@@ -38,6 +38,7 @@ dependencies:
   toastification: ^2.3.0
   jwt_decoder: ^2.0.1
   provider: ^6.1.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

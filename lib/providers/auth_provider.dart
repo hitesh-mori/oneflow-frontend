@@ -158,10 +158,24 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> refreshProfile() async {
+    if (kDebugMode) {
+      debugPrint('🔄 AuthProvider.refreshProfile: Starting...');
+    }
     final user = await AuthService.getProfile();
     if (user != null) {
+      if (kDebugMode) {
+        debugPrint('🔄 AuthProvider.refreshProfile: Got user ${user.name} with type ${user.userType}');
+      }
       _user = user;
+      await StorageService.saveUserData(user);
+      if (kDebugMode) {
+        debugPrint('✅ AuthProvider.refreshProfile: Updated and saved user data');
+      }
       notifyListeners();
+    } else {
+      if (kDebugMode) {
+        debugPrint('❌ AuthProvider.refreshProfile: No user data received from API');
+      }
     }
   }
 }

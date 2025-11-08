@@ -14,7 +14,10 @@
       "Bash(curl:*)",
       "Bash(tar:*)",
       "Bash(powershell -Command:*)",
-      "Bash(flutter doctor:*)"
+      "Bash(flutter doctor:*)",
+      "Bash(del \"lib\\screens\\dashboards\\project_manager\\project_manager_dashboard.dart\")",
+      "Bash(move:*)",
+      "Bash(flutter pub add:*)"
     ],
     "deny": [],
     "ask": []
