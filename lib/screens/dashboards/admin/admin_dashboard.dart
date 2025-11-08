@@ -198,8 +198,10 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
   }
 
   void _openUserDialog(UserModel user) {
-    _selectedRole = user.userType;
-    _hourlyRateController.text = user.hourlyRate.toString();
+    setState(() {
+      _selectedRole = user.userType;
+      _hourlyRateController.text = user.hourlyRate.toString();
+    });
 
     showDialog(
       context: context,
@@ -1474,46 +1476,48 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
               ),
             ),
             Expanded(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'User Details',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.theme['textColor'],
-                          ),
-                        ),
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.close,
-                                color: AppColors.theme['primaryColor'],
-                                size: 22,
+              child: StatefulBuilder(
+                builder: (BuildContext context, StateSetter setDialogState) {
+                  return Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'User Details',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.theme['textColor'],
                               ),
                             ),
-                          ),
+                            MouseRegion(
+                              cursor: SystemMouseCursors.click,
+                              child: GestureDetector(
+                                onTap: () => Navigator.of(context).pop(),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.close,
+                                    color: AppColors.theme['primaryColor'],
+                                    size: 22,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -1601,6 +1605,9 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                                     }).toList(),
                                     onChanged: (String? newValue) {
                                       setState(() {
+                                        _selectedRole = newValue;
+                                      });
+                                      setDialogState(() {
                                         _selectedRole = newValue;
                                       });
                                     },
@@ -1713,11 +1720,13 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                 ),
               ),
             ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         ),
-      ),
-        ],
-      ),
       ),
     );
   }
