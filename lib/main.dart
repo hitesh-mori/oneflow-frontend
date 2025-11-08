@@ -6,7 +6,7 @@ import 'core/routing/app_router.dart';
 import 'providers/auth_provider.dart';
 import 'services/storage_service.dart';
 
-String pageTitle = 'Odoo';
+String pageTitle = 'OneFlow';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
