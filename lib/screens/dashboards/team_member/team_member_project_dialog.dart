@@ -1865,7 +1865,7 @@ class _TeamMemberExpensesTabViewState extends State<TeamMemberExpensesTabView> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.all(32),
       child: Column(
         children: [
@@ -2116,38 +2116,35 @@ class _TeamMemberExpensesTabViewState extends State<TeamMemberExpensesTabView> {
             ),
             const SizedBox(height: 16),
             // Info chips row
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 // Period chip
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_month, size: 14, color: Color(0xFF64748B)),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            expense.expensePeriod,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF64748B),
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_month, size: 14, color: Color(0xFF64748B)),
+                      const SizedBox(width: 6),
+                      Text(
+                        expense.expensePeriod,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                    ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 8),
                 // Billable badge
                 if (expense.billable)
                   Container(
@@ -2173,7 +2170,6 @@ class _TeamMemberExpensesTabViewState extends State<TeamMemberExpensesTabView> {
                       ],
                     ),
                   ),
-                const Spacer(),
               ],
             ),
             const SizedBox(height: 12),
