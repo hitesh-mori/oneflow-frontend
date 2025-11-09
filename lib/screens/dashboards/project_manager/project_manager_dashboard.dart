@@ -2353,46 +2353,171 @@ class _ExpensesViewState extends State<ExpensesView> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          // Details section - 2 rows
-          Row(
+          const Spacer(),
+          // Info section
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildPMDetailItem(Icons.folder_rounded, expense.projectName ?? 'N/A'),
+              // Info chips row
+              Row(
+                children: [
+                  // Project
+                  if (expense.projectName != null && expense.projectName!.isNotEmpty)
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.folder_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                expense.projectName!,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.theme['secondaryColor'],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (expense.projectName != null && expense.projectName!.isNotEmpty) const SizedBox(width: 8),
+                  // Billable badge
+                  if (expense.billable)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
+                          const SizedBox(width: 4),
+                          const Text(
+                            'Billable',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF10B981),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildPMDetailItem(Icons.calendar_month, expense.expensePeriod),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Tooltip(
-                  message: '${expense.submittedBy?.roleLabel ?? 'User'}\n${expense.submittedBy?.email ?? ''}',
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade800,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  textStyle: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  preferBelow: false,
-                  child: _buildPMDetailItem(Icons.person, expense.submitterName),
+              const SizedBox(height: 8),
+              // Period chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                    const SizedBox(width: 4),
+                    Text(
+                      expense.expensePeriod,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.theme['secondaryColor'],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: expense.billable
-                    ? _buildPMDetailItem(Icons.check_circle, 'Billable')
-                    : const SizedBox.shrink(),
-              ),
+              const SizedBox(height: 12),
+              // Submitter with enhanced styling
+              if (expense.submitterName.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.theme['primaryColor'],
+                              (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            expense.submitterName.isNotEmpty ? expense.submitterName[0].toUpperCase() : 'U',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Submitted by',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Color(0xFF94A3B8),
+                              ),
+                            ),
+                            Text(
+                              expense.submitterName,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['textColor'],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (expense.submitterEmail.isNotEmpty)
+                              Text(
+                                expense.submitterEmail,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF94A3B8),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
           // Approve/Reject buttons for Submitted expenses
@@ -3416,36 +3541,73 @@ class _GeneralExpensesViewState extends State<GeneralExpensesView> {
                     ],
                   ),
                   const Spacer(),
-                  // Info chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  // Info section
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Project
-                      if (expense.projectName.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.folder_rounded, size: 14, color: AppColors.theme['secondaryColor']),
-                              const SizedBox(width: 4),
-                              Text(
-                                expense.projectName,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.theme['secondaryColor'],
-                                  fontWeight: FontWeight.w500,
+                      // Info chips row
+                      Row(
+                        children: [
+                          // Project
+                          if (expense.projectName.isNotEmpty)
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.folder_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        expense.projectName,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: AppColors.theme['secondaryColor'],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      // Period
+                            ),
+                          if (expense.projectName.isNotEmpty) const SizedBox(width: 8),
+                          // Billable badge
+                          if (expense.billable)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF10B981)),
+                                  const SizedBox(width: 4),
+                                  const Text(
+                                    'Billable',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF10B981),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Period chip
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
@@ -3468,25 +3630,76 @@ class _GeneralExpensesViewState extends State<GeneralExpensesView> {
                           ],
                         ),
                       ),
-                      // Billable
-                      if (expense.billable)
+                      const SizedBox(height: 12),
+                      // Submitter with enhanced styling
+                      if (expense.submitterName.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                            ),
                           ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.receipt_rounded, size: 14, color: AppColors.theme['secondaryColor']),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Billable',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.theme['secondaryColor'],
-                                  fontWeight: FontWeight.w500,
+                              Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.theme['primaryColor'],
+                                      (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    expense.submitterName.isNotEmpty ? expense.submitterName[0].toUpperCase() : 'U',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Submitted by',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                    Text(
+                                      expense.submitterName,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.theme['textColor'],
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (expense.submitterEmail.isNotEmpty)
+                                      Text(
+                                        expense.submitterEmail,
+                                        style: const TextStyle(
+                                          fontSize: 10,
+                                          color: Color(0xFF94A3B8),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                  ],
                                 ),
                               ),
                             ],
@@ -3494,22 +3707,6 @@ class _GeneralExpensesViewState extends State<GeneralExpensesView> {
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Submitter
-                  if (expense.submitterName.isNotEmpty)
-                    Row(
-                      children: [
-                        Icon(Icons.person_rounded, size: 14, color: AppColors.theme['secondaryColor']),
-                        const SizedBox(width: 4),
-                        Text(
-                          'By ${expense.submitterName}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.theme['secondaryColor'],
-                          ),
-                        ),
-                      ],
-                    ),
                 ],
               ),
             ),

@@ -179,6 +179,7 @@ class ExpenseModel {
 
   String get projectName => projectDetails?.name ?? '';
   String get submitterName => submittedBy?.name ?? '';
+  String get submitterEmail => submittedBy?.email ?? '';
 }
 
 // Expense Status Constants

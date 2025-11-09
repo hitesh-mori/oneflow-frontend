@@ -19,7 +19,9 @@
       "Bash(move:*)",
       "Bash(flutter pub add:*)",
       "Bash(flutter build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(del \"E:\\docs\\HackNuThon\\hacknuthon\\frontend\\project_card_temp.txt\")",
+      "Bash(del \"E:\\docs\\HackNuThon\\hacknuthon\\frontend\\lib\\screens\\dashboards\\sales_dep\\sales_dep_dashboard.dart\")"
     ],
     "deny": [],
     "ask": []

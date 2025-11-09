@@ -8,8 +8,10 @@ import '../../../providers/auth_provider.dart';
 import '../../../services/toast_service.dart';
 import '../../../services/api_service.dart';
 import '../../../services/expense_service.dart';
+import '../../../services/project_service.dart';
 import '../../../models/user_model.dart';
 import '../../../models/expense_model.dart';
+import '../../../models/project_model.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -387,6 +389,12 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
                     onTap: () => setState(() => _selectedMenu = 'users'),
                   ),
                   _buildMenuItem(
+                    icon: Icons.folder_rounded,
+                    title: 'Projects',
+                    isActive: _selectedMenu == 'projects',
+                    onTap: () => setState(() => _selectedMenu = 'projects'),
+                  ),
+                  _buildMenuItem(
                     icon: Icons.receipt_long_rounded,
                     title: 'Expenses',
                     isActive: _selectedMenu == 'expenses',
@@ -517,6 +525,8 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
       return _buildProfileView();
     } else if (_selectedMenu == 'users') {
       return _buildUsersView();
+    } else if (_selectedMenu == 'projects') {
+      return const AdminProjectsView();
     } else if (_selectedMenu == 'expenses') {
       return AdminExpensesView();
     }
@@ -804,124 +814,228 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Users Management',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.theme['textColor'],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '${_filteredUsers.length} users found',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: AppColors.theme['secondaryColor'],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              const SizedBox(width: 20),
+              // Header
               Container(
-                width: 200,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2),
-                  ),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: _roleFilter,
-                    isExpanded: true,
-                    icon: Icon(Icons.filter_list_rounded, color: AppColors.theme['primaryColor']),
-                    items: [
-                      const DropdownMenuItem(value: 'all', child: Text('All Roles')),
-                      ...UserTypes.allTypes.map((type) => DropdownMenuItem(
-                        value: type,
-                        child: Text(UserTypes.getLabel(type)),
-                      )),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
                     ],
-                    onChanged: (value) {
-                      setState(() {
-                        _roleFilter = value!;
-                        _currentPage = 1;
-                        _filterUsers();
-                      });
-                    },
                   ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 280,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2),
+                    color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                    width: 1,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Search users...',
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    prefixIcon: Icon(Icons.search, color: AppColors.theme['secondaryColor'], size: 20),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: _isLoadingUsers ? null : _fetchUsers,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.theme['primaryColor'],
-                          (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title Row
+                    Row(
+                      children: [
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.theme['primaryColor'],
+                                (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.people_rounded, color: Colors.white, size: 30),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Users Management',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.theme['textColor'],
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Manage users, roles, and hourly rates',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.theme['secondaryColor'],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Stats Summary
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.people, color: AppColors.theme['primaryColor'], size: 24),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${_filteredUsers.length}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.theme['primaryColor'],
+                                    ),
+                                  ),
+                                  Text(
+                                    'Users',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.theme['secondaryColor'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    child: _isLoadingUsers
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    const SizedBox(height: 20),
+                    const Divider(height: 1),
+                    const SizedBox(height: 20),
+                    // Controls Row
+                    Row(
+                      children: [
+                        // Search Bar
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade200),
                             ),
-                          )
-                        : const Icon(Icons.refresh, color: Colors.white, size: 20),
-                  ),
+                            child: TextField(
+                              controller: _searchController,
+                              decoration: InputDecoration(
+                                hintText: 'Search by name, email, or role...',
+                                hintStyle: TextStyle(color: AppColors.theme['secondaryColor']),
+                                prefixIcon: Icon(Icons.search_rounded, color: AppColors.theme['secondaryColor']),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                        icon: const Icon(Icons.clear_rounded),
+                                        onPressed: () {
+                                          _searchController.clear();
+                                        },
+                                      )
+                                    : null,
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Role Filter
+                        Container(
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _roleFilter,
+                              icon: Icon(Icons.filter_list_rounded, color: AppColors.theme['primaryColor']),
+                              items: [
+                                const DropdownMenuItem(value: 'all', child: Text('All Roles')),
+                                ...UserTypes.allTypes.map((type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(UserTypes.getLabel(type)),
+                                )),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _roleFilter = value!;
+                                  _currentPage = 1;
+                                  _filterUsers();
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Refresh Button
+                        MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: GestureDetector(
+                            onTap: _isLoadingUsers ? null : _fetchUsers,
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8FAFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: _isLoadingUsers
+                                  ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.theme['primaryColor']),
+                                        ),
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.refresh_rounded,
+                                      color: AppColors.theme['primaryColor'],
+                                      size: 20,
+                                    ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 32),
+              const SizedBox(height: 24),
           Expanded(
             child: _isLoadingUsers
                 ? Center(
@@ -971,18 +1085,19 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
           color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
         ),
       ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
               ),
-            ),
-            child: Row(
+              child: Row(
               children: [
                 Expanded(
                   flex: 2,
@@ -1059,13 +1174,14 @@ class _AdminDashboardState extends State<AdminDashboard> with TickerProviderStat
               ],
             ),
           ),
-          Column(
-            children: [
-              for (var i = 0; i < _paginatedUsers.length; i++)
-                _buildUserRow(_paginatedUsers[i]),
-            ],
-          ),
-        ],
+            Column(
+              children: [
+                for (var i = 0; i < _paginatedUsers.length; i++)
+                  _buildUserRow(_paginatedUsers[i]),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2587,6 +2703,919 @@ class _AdminExpensesViewState extends State<AdminExpensesView> {
         return const Color(0xFFDC2626);
       case 'Reimbursed':
         return const Color(0xFFA65899);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+}
+
+// Admin Projects View
+class AdminProjectsView extends StatefulWidget {
+  const AdminProjectsView({super.key});
+
+  @override
+  State<AdminProjectsView> createState() => _AdminProjectsViewState();
+}
+
+class _AdminProjectsViewState extends State<AdminProjectsView> {
+  List<ProjectModel> _projects = [];
+  List<ProjectModel> _filteredProjects = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  String _statusFilter = 'all';
+  String _sortBy = 'createdAt';
+  bool _sortAscending = false;
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _filterAndSortProjects();
+      });
+    });
+    _loadProjects();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProjects() async {
+    try {
+      setState(() => _isLoading = true);
+      final projects = await ProjectService.getAllProjects();
+      if (mounted) {
+        setState(() {
+          _projects = projects;
+          _filterAndSortProjects();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppToast.showError(context, 'Failed to load projects');
+      }
+    }
+  }
+
+  void _filterAndSortProjects() {
+    var filtered = _projects;
+
+    // Apply status filter
+    if (_statusFilter != 'all') {
+      filtered = filtered.where((project) => project.status == _statusFilter).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      filtered = filtered.where((project) {
+        return project.name.toLowerCase().contains(query) ||
+            (project.description?.toLowerCase().contains(query) ?? false) ||
+            (project.manager?.name.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) {
+      int comparison = 0;
+      switch (_sortBy) {
+        case 'name':
+          comparison = a.name.compareTo(b.name);
+          break;
+        case 'budget':
+          comparison = a.budget.compareTo(b.budget);
+          break;
+        case 'status':
+          comparison = a.status.compareTo(b.status);
+          break;
+        case 'createdAt':
+        default:
+          comparison = (a.createdAt ?? DateTime.now()).compareTo(b.createdAt ?? DateTime.now());
+      }
+      return _sortAscending ? comparison : -comparison;
+    });
+
+    setState(() {
+      _filteredProjects = filtered;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.02),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                  blurRadius: 24,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title Row
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.theme['primaryColor'],
+                            (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.3),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.folder_rounded, color: Colors.white, size: 30),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Projects Management',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.theme['textColor'],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'View and monitor all projects in the system',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.theme['secondaryColor'],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Stats Summary
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.folder, color: AppColors.theme['primaryColor'], size: 24),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${_filteredProjects.length}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.theme['primaryColor'],
+                                ),
+                              ),
+                              Text(
+                                'Projects',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.theme['secondaryColor'],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1),
+                const SizedBox(height: 20),
+                // Controls Row
+                Row(
+                  children: [
+                    // Search Bar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search by name, description, or manager...',
+                            hintStyle: TextStyle(color: AppColors.theme['secondaryColor']),
+                            prefixIcon: Icon(Icons.search_rounded, color: AppColors.theme['secondaryColor']),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                    },
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Sort By
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _sortBy,
+                          icon: Icon(Icons.sort_rounded, color: AppColors.theme['primaryColor']),
+                          items: const [
+                            DropdownMenuItem(value: 'createdAt', child: Text('Date')),
+                            DropdownMenuItem(value: 'name', child: Text('Name')),
+                            DropdownMenuItem(value: 'budget', child: Text('Budget')),
+                            DropdownMenuItem(value: 'status', child: Text('Status')),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _sortBy = value!;
+                              _filterAndSortProjects();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Sort Direction
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _sortAscending = !_sortAscending;
+                            _filterAndSortProjects();
+                          });
+                        },
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Icon(
+                            _sortAscending ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                            color: AppColors.theme['primaryColor'],
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Status Filter
+                    Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _statusFilter,
+                          icon: Icon(Icons.filter_list_rounded, color: AppColors.theme['primaryColor']),
+                          items: [
+                            const DropdownMenuItem(value: 'all', child: Text('All Status')),
+                            ...ProjectStatus.allStatuses.map((status) {
+                              return DropdownMenuItem(
+                                value: status,
+                                child: Text(ProjectStatus.getLabel(status)),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _statusFilter = value!;
+                              _filterAndSortProjects();
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Refresh Button
+                    MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        onTap: _loadProjects,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Icon(
+                            Icons.refresh_rounded,
+                            color: AppColors.theme['primaryColor'],
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Projects List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredProjects.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.folder_open_rounded,
+                              size: 80,
+                              color: Colors.grey.shade300,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No projects found',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Try adjusting your search or filters',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.theme['secondaryColor'],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.1,
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 20,
+                        ),
+                        itemCount: _filteredProjects.length,
+                        itemBuilder: (context, index) {
+                          return _buildProjectCard(_filteredProjects[index]);
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProjectCard(ProjectModel project) {
+    final statusColor = _getProjectStatusColor(project.status);
+    final budgetPercentage = project.budget > 0 ? (project.costToDate / project.budget) * 100 : 0.0;
+    final isOverBudget = project.isOverBudget;
+
+    return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project.name,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.theme['textColor'],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      if (project.description != null)
+                        Text(
+                          project.description!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.theme['secondaryColor'],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    ProjectStatus.getLabel(project.status),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: statusColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Cost Details Section
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildCostItem(
+                          'Budget',
+                          '\$${project.budget.toStringAsFixed(0)}',
+                          Icons.account_balance_wallet_rounded,
+                          const Color(0xFF3B82F6),
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.grey.shade300,
+                      ),
+                      Expanded(
+                        child: _buildCostItem(
+                          'Spent',
+                          '\$${project.costToDate.toStringAsFixed(0)}',
+                          Icons.trending_up_rounded,
+                          isOverBudget ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                        ),
+                      ),
+                      Container(
+                        width: 1,
+                        height: 30,
+                        color: Colors.grey.shade300,
+                      ),
+                      Expanded(
+                        child: _buildCostItem(
+                          'Remaining',
+                          '\$${project.remainingBudget.toStringAsFixed(0)}',
+                          Icons.savings_rounded,
+                          project.remainingBudget < 0 ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Budget Progress Bar
+                  Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Budget Usage',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.theme['secondaryColor'],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          Text(
+                            '${budgetPercentage.toStringAsFixed(1)}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: isOverBudget ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: (budgetPercentage / 100).clamp(0.0, 1.0),
+                          minHeight: 6,
+                          backgroundColor: Colors.grey.shade300,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            isOverBudget ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 14),
+
+            // Timeline Info
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoChip(
+                    Icons.calendar_today_rounded,
+                    'Start',
+                    project.startDate != null ? _formatDateShort(project.startDate!) : 'Not set',
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildInfoChip(
+                    Icons.flag_rounded,
+                    'End',
+                    project.endDate != null ? _formatDateShort(project.endDate!) : 'Not set',
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+
+            // Team Section
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.people_rounded, size: 14, color: AppColors.theme['secondaryColor']),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Team (${project.members.length + (project.manager != null ? 1 : 0)})',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.theme['secondaryColor'],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Manager
+                if (project.manager != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.theme['primaryColor'],
+                                (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.7),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              project.manager!.name.isNotEmpty ? project.manager!.name[0].toUpperCase() : 'M',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                project.manager!.name,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.theme['textColor'],
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                'Project Manager',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.theme['secondaryColor'],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Team Members
+                if (project.members.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        // Show up to 5 member avatars
+                        ...project.members.take(5).map((member) {
+                          return Tooltip(
+                            message: member.name,
+                            textStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            margin: const EdgeInsets.only(top: 8),
+                            waitDuration: const Duration(milliseconds: 300),
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 4),
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                                ),
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  member.name.isNotEmpty ? member.name[0].toUpperCase() : 'T',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        if (project.members.length > 5)
+                          Tooltip(
+                            message: '${project.members.length - 5} more members',
+                            textStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black87,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            margin: const EdgeInsets.only(top: 8),
+                            waitDuration: const Duration(milliseconds: 300),
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              width: 28,
+                              height: 28,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '+${project.members.length - 5}',
+                                  style: TextStyle(
+                                    color: AppColors.theme['textColor'],
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 10,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        Text(
+                          '${project.members.length} Members',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.theme['secondaryColor'],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Center(
+                      child: Text(
+                        'No team members assigned',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.theme['secondaryColor'],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCostItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: AppColors.theme['secondaryColor'],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.theme['secondaryColor']),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: AppColors.theme['secondaryColor'],
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.theme['textColor'],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateShort(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  Color _getProjectStatusColor(String status) {
+    switch (status) {
+      case 'planned':
+        return const Color(0xFF64748B);
+      case 'active':
+        return const Color(0xFF10B981);
+      case 'on_hold':
+        return const Color(0xFFF59E0B);
+      case 'completed':
+        return const Color(0xFFA65899);
+      case 'cancelled':
+        return const Color(0xFFEF4444);
       default:
         return const Color(0xFF64748B);
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/theme/app_colors.dart';
 
 class CustomTextField extends StatefulWidget {
@@ -12,6 +13,7 @@ class CustomTextField extends StatefulWidget {
   final int maxLines;
   final TextInputAction? textInputAction;
   final Function(String)? onFieldSubmitted;
+  final List<TextInputFormatter>? inputFormatters;
 
   const CustomTextField({
     super.key,
@@ -25,6 +27,7 @@ class CustomTextField extends StatefulWidget {
     this.maxLines = 1,
     this.textInputAction,
     this.onFieldSubmitted,
+    this.inputFormatters,
   });
 
   @override
@@ -77,6 +80,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
           maxLines: widget.maxLines,
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
+          inputFormatters: widget.inputFormatters,
           style: TextStyle(
             color: AppColors.theme['textColor'],
             fontSize: 15,

@@ -1589,6 +1589,8 @@ class _TeamMemberExpensesViewState extends State<TeamMemberExpensesView> {
 
   Widget _buildExpenseCard(ExpenseModel expense) {
     final statusColor = _getExpenseStatusColor(expense.status);
+    final submitterName = expense.submitterName.isNotEmpty ? expense.submitterName : 'Unknown';
+    final email = expense.submitterEmail;
 
     return Container(
       decoration: BoxDecoration(
@@ -1720,52 +1722,183 @@ class _TeamMemberExpensesViewState extends State<TeamMemberExpensesView> {
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Expanded(
-                  child: _buildDetailItem(Icons.folder_rounded, expense.projectName),
+                // Project chip
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.15),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.folder_rounded, size: 14, color: AppColors.theme['primaryColor']),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            expense.projectName,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.theme['textColor'],
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                Container(
-                  width: 1,
-                  height: 30,
-                  color: Colors.grey.shade200,
-                ),
-                Expanded(
-                  child: _buildDetailItem(Icons.calendar_month, expense.expensePeriod),
-                ),
+                const SizedBox(width: 8),
+                // Billable badge
+                if (expense.billable)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Billable',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF10B981),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Spacer(),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
             child: Row(
               children: [
-                Expanded(
-                  child: Tooltip(
-                    message: '${expense.submittedBy?.roleLabel ?? 'User'}\n${expense.submittedBy?.email ?? ''}',
+                // Period chip
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade800,
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    textStyle: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.calendar_month, size: 14, color: Color(0xFF64748B)),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            expense.expensePeriod,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF64748B),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    preferBelow: false,
-                    child: _buildDetailItem(Icons.person, expense.submitterName),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 30,
-                  color: Colors.grey.shade200,
-                ),
-                Expanded(
-                  child: _buildDetailItem(
-                    expense.billable ? Icons.check_circle : Icons.cancel,
-                    expense.billable ? 'Billable' : 'Non-billable',
-                  ),
-                ),
+                const Spacer(),
               ],
+            ),
+          ),
+          // Enhanced submitter card
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.8),
+                          (AppColors.theme['primaryColor'] as Color).withValues(alpha: 0.6),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        submitterName[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Submitted by',
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          submitterName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF1E293B),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (email.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            email,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFF94A3B8),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
