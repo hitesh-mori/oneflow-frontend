@@ -12,6 +12,7 @@ import '../../../services/product_service.dart';
 import 'add_edit_partner_dialog.dart';
 import 'add_edit_product_dialog.dart';
 import 'sales_orders_content.dart';
+import 'purchase_orders_content.dart';
 
 class SalesDepDashboard extends StatefulWidget {
   const SalesDepDashboard({super.key});
@@ -393,7 +394,7 @@ class _SalesDepDashboardState extends State<SalesDepDashboard> {
       case 'sales_orders':
         return const SalesOrdersContent();
       case 'purchase_orders':
-        return _buildPlaceholderContent('Purchase Orders', Icons.receipt_long_outlined);
+        return const PurchaseOrdersContent();
       case 'profile':
         return _buildProfileContent();
       default:
