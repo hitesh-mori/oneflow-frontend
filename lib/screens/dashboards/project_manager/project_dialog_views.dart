@@ -1,13 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:intl/intl.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../services/toast_service.dart';
 import '../../../services/project_service.dart';
 import '../../../services/task_service.dart';
+import '../../../services/order_service.dart';
 import '../../../services/api_service.dart';
 import '../../../models/project_model.dart';
 import '../../../models/task_model.dart';
+import '../../../models/order_model.dart';
 import '../../../models/user_model.dart';
 
 // EDIT PROJECT VIEW
@@ -2286,4 +2289,564 @@ Widget buildCircularShimmer({double size = 20}) {
       ),
     ),
   );
+}
+
+// PROJECT ORDERS VIEW
+class ProjectOrdersView extends StatefulWidget {
+  final ProjectModel project;
+  final String orderType; // 'Sales' or 'Purchase'
+
+  const ProjectOrdersView({
+    super.key,
+    required this.project,
+    required this.orderType,
+  });
+
+  @override
+  State<ProjectOrdersView> createState() => _ProjectOrdersViewState();
+}
+
+class _ProjectOrdersViewState extends State<ProjectOrdersView> {
+  final OrderService _orderService = OrderService();
+  List<OrderModel> _orders = [];
+  bool _isLoading = false;
+  OrderModel? _selectedOrder;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOrders();
+  }
+
+  Future<void> _loadOrders() async {
+    setState(() => _isLoading = true);
+    final result = await _orderService.getOrdersByProject(widget.project.id);
+    if (result['success']) {
+      setState(() {
+        final allOrders = result['data'] as List<OrderModel>;
+        _orders = allOrders
+            .where((order) => order.type == widget.orderType)
+            .toList();
+      });
+    } else {
+      if (mounted) {
+        AppToast.showError(context, result['message'] ?? 'Failed to load orders');
+      }
+    }
+    setState(() => _isLoading = false);
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'draft':
+        return const Color(0xFF94A3B8);
+      case 'confirmed':
+        return const Color(0xFF3B82F6);
+      case 'done':
+        return const Color(0xFF10B981);
+      case 'cancelled':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF94A3B8);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_orders.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              widget.orderType == 'Sales'
+                  ? Icons.shopping_cart_outlined
+                  : Icons.shopping_bag_outlined,
+              size: 64,
+              color: AppColors.theme['secondaryColor'],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No ${widget.orderType} Orders',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.theme['textColor'],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No ${widget.orderType.toLowerCase()} orders found for this project',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.theme['secondaryColor'],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        // Orders List
+        Expanded(
+          flex: 3,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${widget.orderType} Orders',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.theme['textColor'],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_orders.length} ${_orders.length == 1 ? 'order' : 'orders'} found',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.theme['secondaryColor'],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        // Table Header
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: (AppColors.theme['primaryColor'] as Color)
+                                .withValues(alpha: 0.05),
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'ORDER CODE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['secondaryColor'],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  widget.orderType == 'Sales'
+                                      ? 'CUSTOMER'
+                                      : 'VENDOR',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['secondaryColor'],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'DATE',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['secondaryColor'],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'STATUS',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['secondaryColor'],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Text(
+                                  'TOTAL',
+                                  textAlign: TextAlign.right,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['secondaryColor'],
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Table Body
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: _orders.length,
+                            itemBuilder: (context, index) {
+                              final order = _orders[index];
+                              final isSelected = _selectedOrder?.id == order.id;
+                              return MouseRegion(
+                                cursor: SystemMouseCursors.click,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedOrder = order;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? (AppColors.theme['primaryColor']
+                                                  as Color)
+                                              .withValues(alpha: 0.05)
+                                          : Colors.transparent,
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: Colors.grey.shade200,
+                                        ),
+                                        left: isSelected
+                                            ? BorderSide(
+                                                color: AppColors
+                                                    .theme['primaryColor'],
+                                                width: 3,
+                                              )
+                                            : BorderSide.none,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            order.code,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.theme['textColor'],
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 2,
+                                          child: Text(
+                                            order.partnerName,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColors.theme['textColor'],
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            DateFormat('MMM dd, yy')
+                                                .format(order.orderDate),
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: AppColors
+                                                  .theme['secondaryColor'],
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: _getStatusColor(order.status)
+                                                  .withValues(alpha: 0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Text(
+                                              order.statusDisplay,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: _getStatusColor(order.status),
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            '\$${order.totalAmount.toStringAsFixed(2)}',
+                                            textAlign: TextAlign.right,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.theme['textColor'],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Order Details
+        if (_selectedOrder != null)
+          Expanded(
+            flex: 2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                border: Border(
+                  left: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Order Details',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.theme['textColor'],
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _selectedOrder = null;
+                            });
+                          },
+                          icon: const Icon(Icons.close),
+                          tooltip: 'Close',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    _buildDetailRow('Order Code', _selectedOrder!.code),
+                    _buildDetailRow(
+                      widget.orderType == 'Sales' ? 'Customer' : 'Vendor',
+                      _selectedOrder!.partnerName,
+                    ),
+                    _buildDetailRow(
+                      'Order Date',
+                      DateFormat('MMMM dd, yyyy').format(_selectedOrder!.orderDate),
+                    ),
+                    _buildDetailRow('Status', _selectedOrder!.statusDisplay),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Order Lines',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.theme['textColor'],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._selectedOrder!.lines.map((line) => Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                line.product?.name ?? 'Product',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.theme['textColor'],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Qty: ${line.quantity} ${line.unit}',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.theme['secondaryColor'],
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${line.unitPrice.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.theme['secondaryColor'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Tax: ${line.taxPercent.toStringAsFixed(0)}%',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.theme['secondaryColor'],
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${line.totalAmount.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.theme['primaryColor'],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        )),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: (AppColors.theme['primaryColor'] as Color)
+                            .withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (AppColors.theme['primaryColor'] as Color)
+                              .withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Untaxed Amount',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.theme['textColor'],
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '\$${_selectedOrder!.untaxedAmount.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.theme['textColor'],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'Total Amount',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.theme['primaryColor'],
+                                  ),
+                                ),
+                              ),
+                              Text(
+                                '\$${_selectedOrder!.totalAmount.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.theme['primaryColor'],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.theme['secondaryColor'],
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: AppColors.theme['textColor'],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

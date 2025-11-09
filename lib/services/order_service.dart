@@ -224,4 +224,43 @@ class OrderService {
   Future<Map<String, dynamic>> cancelOrder(String orderId) async {
     return updateOrder(orderId, {'status': 'Cancelled'});
   }
+
+  // Get orders by project ID
+  Future<Map<String, dynamic>> getOrdersByProject(String projectId) async {
+    try {
+      print('📤 Fetching orders for project: $projectId');
+      final response = await ApiService.get('/api/order/project/$projectId', needsAuth: true);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        List<OrderModel> orders = [];
+        if (data['data'] != null) {
+          orders = (data['data'] as List)
+              .map((order) => OrderModel.fromJson(order))
+              .toList();
+        }
+
+        print('✅ Retrieved ${orders.length} orders for project');
+        return {
+          'success': true,
+          'data': orders,
+          'count': data['count'] ?? orders.length,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': 'Failed to fetch project orders',
+          'data': [],
+        };
+      }
+    } catch (e) {
+      print('❌ Error fetching project orders: $e');
+      return {
+        'success': false,
+        'message': e.toString(),
+        'data': [],
+      };
+    }
+  }
 }

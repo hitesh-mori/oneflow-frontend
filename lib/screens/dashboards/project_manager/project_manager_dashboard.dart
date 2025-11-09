@@ -1464,6 +1464,8 @@ class _ProjectDetailsDialogState extends State<ProjectDetailsDialog> {
                   _buildTabButton('Tasks', Icons.task_alt_rounded, 'tasks'),
                   _buildTabButton('Team Members', Icons.people_rounded, 'members'),
                   _buildTabButton('Expenses', Icons.receipt_long_rounded, 'expenses'),
+                  _buildTabButton('Sales Orders', Icons.shopping_cart_outlined, 'sales_orders'),
+                  _buildTabButton('Purchase Orders', Icons.shopping_bag_outlined, 'purchase_orders'),
                   const Spacer(),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -1490,7 +1492,11 @@ class _ProjectDetailsDialogState extends State<ProjectDetailsDialog> {
                       ? TasksView(project: widget.project)
                       : _selectedTab == 'members'
                           ? TeamMembersView(project: widget.project)
-                          : ExpensesView(project: widget.project),
+                          : _selectedTab == 'expenses'
+                              ? ExpensesView(project: widget.project)
+                              : _selectedTab == 'sales_orders'
+                                  ? ProjectOrdersView(project: widget.project, orderType: 'Sales')
+                                  : ProjectOrdersView(project: widget.project, orderType: 'Purchase'),
             ),
           ],
         ),

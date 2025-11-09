@@ -4,10 +4,13 @@ import 'package:shimmer/shimmer.dart';
 import '../../../models/project_model.dart';
 import '../../../models/task_model.dart';
 import '../../../models/expense_model.dart';
+import '../../../models/order_model.dart';
 import '../../../services/task_service.dart';
 import '../../../services/expense_service.dart';
+import '../../../services/order_service.dart';
 import '../../../services/toast_service.dart';
 import '../../../core/theme/app_colors.dart';
+import '../project_manager/project_dialog_views.dart';
 
 class TeamMemberProjectDialog extends StatefulWidget {
   final ProjectModel project;
@@ -88,6 +91,8 @@ class _TeamMemberProjectDialogState extends State<TeamMemberProjectDialog> {
                   _buildTabButton('My Tasks', Icons.task_alt_rounded, 'tasks'),
                   _buildTabButton('Log Hours', Icons.access_time_rounded, 'hours'),
                   _buildTabButton('Expenses', Icons.receipt_long_rounded, 'expenses'),
+                  _buildTabButton('Sales Orders', Icons.shopping_cart_outlined, 'sales_orders'),
+                  _buildTabButton('Purchase Orders', Icons.shopping_bag_outlined, 'purchase_orders'),
                   const Spacer(),
                   Padding(
                     padding: const EdgeInsets.all(16),
@@ -127,7 +132,11 @@ class _TeamMemberProjectDialogState extends State<TeamMemberProjectDialog> {
                   ? MyTasksView(project: widget.project)
                   : _selectedTab == 'hours'
                       ? LogHoursView(project: widget.project)
-                      : TeamMemberExpensesTabView(project: widget.project),
+                      : _selectedTab == 'expenses'
+                          ? TeamMemberExpensesTabView(project: widget.project)
+                          : _selectedTab == 'sales_orders'
+                              ? ProjectOrdersView(project: widget.project, orderType: 'Sales')
+                              : ProjectOrdersView(project: widget.project, orderType: 'Purchase'),
             ),
           ],
         ),
